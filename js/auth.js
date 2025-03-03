@@ -134,11 +134,61 @@ async function updateSignInStatus(isSignedIn, googleUser = null) {
 
 // Handle login button click
 function handleLogin() {
-  // Trigger download of the Python bridge script
-  downloadPythonBridge();
+  // Check for local WebSocket connection to the Python bridge first
+  const socket = new WebSocket('ws://localhost:8765');
   
-  // Check for local WebSocket connection to the Python bridge
-  checkLocalBridgeConnection();
+  socket.onopen = function() {
+    showNotification('Connected to local authentication bridge!', 'success');
+    
+    // Initiate authentication process
+    socket.send(JSON.stringify({
+      action: 'init_auth'
+    }));
+  };
+  
+  socket.onmessage = function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      
+      if (data.status === 'success' && data.access_token) {
+        // Store tokens and update authentication state
+        storeAuthTokens(data.access_token, data.refresh_token);
+        
+        // Create a mock GoogleUser object for compatibility with existing code
+        const mockGoogleUser = createMockGoogleUser(data.access_token);
+        updateSignInStatus(true, mockGoogleUser);
+        
+        socket.close();
+      }
+    } catch (error) {
+      console.error('Error processing WebSocket message:', error);
+      showNotification('Error during authentication process', 'error');
+    }
+  };
+  
+  socket.onerror = function() {
+    showNotification('Could not connect to local authentication bridge. Please ensure the Python script is running on your Raspberry Pi.', 'error');
+    
+    // Only trigger download of Python bridge script if connection failed
+    downloadPythonBridge();
+    
+    if (!googleAuth) {
+      showNotification('Falling back to direct Google authentication', 'info');
+      // Original Google auth code can still run as fallback if bridge is not found
+      if (gapi && gapi.auth2) {
+        gapi.auth2.getAuthInstance().signIn().catch(error => {
+          console.error('Error signing in:', error);
+          showErrorNotification(error);
+        });
+      } else {
+        showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
+      }
+    }
+  };
+  
+  socket.onclose = function() {
+    console.log('Connection to local bridge closed');
+  };
 }
 
 // Download Python bridge script
@@ -260,64 +310,6 @@ if __name__ == "__main__":
         print("Bridge servers stopped.")
         sys.exit(0)
 `;
-}
-
-// Check for local WebSocket connection to the Python bridge
-function checkLocalBridgeConnection() {
-  showNotification('Checking for local authentication bridge...', 'info');
-  
-  // Try to connect to local WebSocket server
-  const socket = new WebSocket('ws://localhost:8765');
-  
-  socket.onopen = function() {
-    showNotification('Connected to local authentication bridge!', 'success');
-    
-    // Initiate authentication process
-    socket.send(JSON.stringify({
-      action: 'init_auth'
-    }));
-  };
-  
-  socket.onmessage = function(event) {
-    try {
-      const data = JSON.parse(event.data);
-      
-      if (data.status === 'success' && data.access_token) {
-        // Store tokens and update authentication state
-        storeAuthTokens(data.access_token, data.refresh_token);
-        
-        // Create a mock GoogleUser object for compatibility with existing code
-        const mockGoogleUser = createMockGoogleUser(data.access_token);
-        updateSignInStatus(true, mockGoogleUser);
-        
-        socket.close();
-      }
-    } catch (error) {
-      console.error('Error processing WebSocket message:', error);
-      showNotification('Error during authentication process', 'error');
-    }
-  };
-  
-  socket.onerror = function() {
-    showNotification('Could not connect to local authentication bridge. Please ensure the Python script is running on your Raspberry Pi.', 'error');
-    
-    if (!googleAuth) {
-      showNotification('Falling back to direct Google authentication', 'info');
-      // Original Google auth code can still run as fallback if bridge is not found
-      if (gapi && gapi.auth2) {
-        gapi.auth2.getAuthInstance().signIn().catch(error => {
-          console.error('Error signing in:', error);
-          showErrorNotification(error);
-        });
-      } else {
-        showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-      }
-    }
-  };
-  
-  socket.onclose = function() {
-    console.log('Connection to local bridge closed');
-  };
 }
 
 // Store authentication tokens
