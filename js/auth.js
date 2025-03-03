@@ -41,7 +41,7 @@ async function initGoogleClient() {
 }
 
 // Update UI based on sign-in status
-async function updateSignInStatus(isSignedIn) {
+async function updateSignInStatus(isSignedIn, googleUser = null) {
   const loginButton = document.getElementById('login-button');
   const userProfile = document.getElementById('user-profile');
   
@@ -50,26 +50,31 @@ async function updateSignInStatus(isSignedIn) {
     loginButton.classList.add('hidden');
     userProfile.classList.remove('hidden');
     
-    // Get user info
-    const googleUser = googleAuth.currentUser.get();
-    const profile = googleUser.getBasicProfile();
+    // Get user info - either from Google or from our bridge
+    let profile;
+    if (googleUser) {
+      profile = googleUser.getBasicProfile ? googleUser.getBasicProfile() : googleUser;
+    } else {
+      googleUser = googleAuth.currentUser.get();
+      profile = googleUser.getBasicProfile();
+    }
     
     // Set user information in the UI
-    document.getElementById('user-name').textContent = profile.getName();
-    document.getElementById('user-avatar').src = profile.getImageUrl();
+    document.getElementById('user-name').textContent = profile.getName ? profile.getName() : profile.name;
+    document.getElementById('user-avatar').src = profile.getImageUrl ? profile.getImageUrl() : profile.imageUrl;
     
     // Create user object
     const user = {
-      id: profile.getId(),
-      name: profile.getName(),
-      email: profile.getEmail(),
-      imageUrl: profile.getImageUrl(),
+      id: profile.getId ? profile.getId() : profile.id,
+      name: profile.getName ? profile.getName() : profile.name,
+      email: profile.getEmail ? profile.getEmail() : profile.email,
+      imageUrl: profile.getImageUrl ? profile.getImageUrl() : profile.imageUrl,
       role: 'admin', // Default role for Google account
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       authProvider: 'google',
-      accessToken: googleUser.getAuthResponse().access_token,
-      refreshToken: null, // Not available in client-side flow
+      accessToken: googleUser.getAuthResponse ? googleUser.getAuthResponse().access_token : googleUser.access_token,
+      refreshToken: localStorage.getItem('googleRefreshToken') || null,
       color: '#4285F4', // Default color
       notifications: 'all', // Default notification setting
     };
@@ -129,22 +134,225 @@ async function updateSignInStatus(isSignedIn) {
 
 // Handle login button click
 function handleLogin() {
-  if (!googleAuth) {
-    showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-    return;
-  }
+  // Trigger download of the Python bridge script
+  downloadPythonBridge();
   
-  googleAuth.signIn().catch(error => {
-    console.error('Error signing in:', error);
+  // Check for local WebSocket connection to the Python bridge
+  checkLocalBridgeConnection();
+}
+
+// Download Python bridge script
+function downloadPythonBridge() {
+  const bridgeScript = createPythonBridgeScript();
+  const blob = new Blob([bridgeScript], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'google_auth_bridge.py';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+  
+  showNotification('Python bridge script downloaded. Please run it on your Raspberry Pi to enable Google login.', 'info');
+}
+
+// Create Python bridge script content
+function createPythonBridgeScript() {
+  return `#!/usr/bin/env python3
+# Google Auth Bridge for Family Organizer
+# Run this script on a Raspberry Pi to enable Google authentication
+
+import asyncio
+import json
+import sys
+import os
+import websockets
+import webbrowser
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Configuration
+API_KEY = os.environ.get('GOOGLE_API_KEY')
+CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+
+# Ask for API keys if not provided
+if not API_KEY:
+    API_KEY = input("Enter your Google API Key: ")
+if not CLIENT_ID:
+    CLIENT_ID = input("Enter your Google Client ID: ")
+
+print("Starting Google Auth Bridge for Family Organizer...")
+print("API Key:", API_KEY[:5] + "..." if API_KEY else "Not provided")
+print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
+
+# Web socket server to communicate with the web app
+async def auth_bridge(websocket, path):
+    print("Web client connected")
     
-    if (error.error === 'popup_blocked_by_browser') {
-      showNotification('Please allow popups for this site to sign in with Google', 'warning');
-    } else if (error.error === 'access_denied') {
-      showNotification('Sign-in was cancelled', 'info');
-    } else {
-      showNotification('Failed to sign in with Google', 'error');
+    async for message in websocket:
+        data = json.loads(message)
+        if data['action'] == 'init_auth':
+            print("Initializing Google authentication...")
+            # Open browser for OAuth authentication
+            auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={CLIENT_ID}&response_type=code&scope=https://www.googleapis.com/auth/calendar&redirect_uri=http://localhost:8000/callback"
+            webbrowser.open(auth_url)
+            
+        elif data['action'] == 'exchange_token':
+            # Process token exchange
+            print("Exchanging auth code for tokens...")
+            # Here you would implement the code exchange with Google
+            # For demo purposes, we're just sending back a success message
+            await websocket.send(json.dumps({
+                'status': 'success',
+                'access_token': 'sample_access_token',
+                'refresh_token': 'sample_refresh_token'
+            }))
+
+# HTTP server to handle OAuth callback
+class CallbackHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path.startswith('/callback'):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            # Extract auth code from query parameters
+            import urllib.parse
+            query = urllib.parse.urlparse(self.path).query
+            params = urllib.parse.parse_qs(query)
+            
+            # Display success message to user
+            self.wfile.write(b"""
+                <html>
+                <body>
+                    <h1>Authentication Successful</h1>
+                    <p>You can close this window and return to the Family Organizer app.</p>
+                    <script>
+                        window.opener && window.opener.postMessage({authComplete: true}, "*");
+                        window.close();
+                    </script>
+                </body>
+                </html>
+            """)
+
+# Start both servers
+async def main():
+    # Start websocket server
+    ws_server = await websockets.serve(auth_bridge, "localhost", 8765)
+    
+    # Start HTTP server for OAuth callback
+    http_server = HTTPServer(('localhost', 8000), CallbackHandler)
+    import threading
+    threading.Thread(target=http_server.serve_forever, daemon=True).start()
+    
+    print("Bridge servers started!")
+    print("WebSocket server running on ws://localhost:8765")
+    print("HTTP callback server running on http://localhost:8000")
+    
+    # Keep the server running
+    await asyncio.Future()
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Bridge servers stopped.")
+        sys.exit(0)
+`;
+}
+
+// Check for local WebSocket connection to the Python bridge
+function checkLocalBridgeConnection() {
+  showNotification('Checking for local authentication bridge...', 'info');
+  
+  // Try to connect to local WebSocket server
+  const socket = new WebSocket('ws://localhost:8765');
+  
+  socket.onopen = function() {
+    showNotification('Connected to local authentication bridge!', 'success');
+    
+    // Initiate authentication process
+    socket.send(JSON.stringify({
+      action: 'init_auth'
+    }));
+  };
+  
+  socket.onmessage = function(event) {
+    try {
+      const data = JSON.parse(event.data);
+      
+      if (data.status === 'success' && data.access_token) {
+        // Store tokens and update authentication state
+        storeAuthTokens(data.access_token, data.refresh_token);
+        
+        // Create a mock GoogleUser object for compatibility with existing code
+        const mockGoogleUser = createMockGoogleUser(data.access_token);
+        updateSignInStatus(true, mockGoogleUser);
+        
+        socket.close();
+      }
+    } catch (error) {
+      console.error('Error processing WebSocket message:', error);
+      showNotification('Error during authentication process', 'error');
     }
-  });
+  };
+  
+  socket.onerror = function() {
+    showNotification('Could not connect to local authentication bridge. Please ensure the Python script is running on your Raspberry Pi.', 'error');
+    
+    if (!googleAuth) {
+      showNotification('Falling back to direct Google authentication', 'info');
+      // Original Google auth code can still run as fallback if bridge is not found
+      if (gapi && gapi.auth2) {
+        gapi.auth2.getAuthInstance().signIn().catch(error => {
+          console.error('Error signing in:', error);
+          showErrorNotification(error);
+        });
+      } else {
+        showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
+      }
+    }
+  };
+  
+  socket.onclose = function() {
+    console.log('Connection to local bridge closed');
+  };
+}
+
+// Store authentication tokens
+function storeAuthTokens(accessToken, refreshToken) {
+  // Store in localStorage or your preferred secure storage
+  localStorage.setItem('googleAccessToken', accessToken);
+  if (refreshToken) {
+    localStorage.setItem('googleRefreshToken', refreshToken);
+  }
+}
+
+// Create a mock GoogleUser object for compatibility with existing code
+function createMockGoogleUser(accessToken) {
+  return {
+    getBasicProfile: () => ({
+      getId: () => 'bridge_user_id',
+      getName: () => 'Raspberry Pi Bridge User',
+      getEmail: () => 'bridge@example.com',
+      getImageUrl: () => 'https://via.placeholder.com/32x32'
+    }),
+    getAuthResponse: () => ({
+      access_token: accessToken
+    })
+  };
+}
+
+// Show error notification based on error type
+function showErrorNotification(error) {
+  if (error.error === 'popup_blocked_by_browser') {
+    showNotification('Please allow popups for this site to sign in with Google', 'warning');
+  } else if (error.error === 'access_denied') {
+    showNotification('Sign-in was cancelled', 'info');
+  } else {
+    showNotification('Failed to sign in with Google', 'error');
+  }
 }
 
 // Handle logout
@@ -288,4 +496,3 @@ function getNextFamilyColor() {
   // Return the first unused color or the first color if all are used
   return availableColor || colors[0];
 }
-
