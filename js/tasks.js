@@ -1474,5 +1474,23 @@ async function loadChoreChart() {
           
           return `
             <div class="chore-chart-cell chore-cell">
-              ${dayChores.length > 0 ? dayChores.
-
+              ${dayChores.length > 0 ? dayChores.map(chore => `
+                <div class="chore-item ${chore.completed ? 'completed' : ''}" title="${chore.title}">
+                  <span class="chore-title">${chore.title}</span>
+                  <input type="checkbox" ${chore.completed ? 'checked' : ''} data-task-id="${chore.id}" class="task-checkbox">
+                </div>
+              `).join('') : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  });
+  
+  choreChart.innerHTML = html;
+  
+  // Add event listeners to checkboxes
+  choreChart.querySelectorAll('.task-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', handleTaskCheckboxChange);
+  });
+}
