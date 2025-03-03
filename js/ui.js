@@ -83,3 +83,13 @@ function showNotification(message, type = 'info') {
   
   return notification;
 }
+
+// Handle URL hash changes to update the view
+function handleHashChange() {
+  const hash = window.location.hash.substring(1);
+  if (hash) {
+    changeView(hash);
+  } else {
+    changeView('dashboard');
+  }
+}
