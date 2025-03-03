@@ -144,33 +144,18 @@ function handleLogin() {
 // Download Python bridge script
 function downloadPythonBridge() {
   const bridgeScript = createPythonBridgeScript();
-  const bridgeShellScript = createShellScript();
+  const blob = new Blob([bridgeScript], { type: 'text/plain' });
+  const url = window.URL.createObjectURL(blob);
   
-  // Download Python script
-  const pythonBlob = new Blob([bridgeScript], { type: 'text/plain' });
-  const pythonUrl = window.URL.createObjectURL(pythonBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'google_auth_bridge.py';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
   
-  const pythonLink = document.createElement('a');
-  pythonLink.href = pythonUrl;
-  pythonLink.download = 'google_auth_bridge.py';
-  document.body.appendChild(pythonLink);
-  pythonLink.click();
-  document.body.removeChild(pythonLink);
-  window.URL.revokeObjectURL(pythonUrl);
-  
-  // Download shell script
-  const shellBlob = new Blob([bridgeShellScript], { type: 'text/plain' });
-  const shellUrl = window.URL.createObjectURL(shellBlob);
-  
-  const shellLink = document.createElement('a');
-  shellLink.href = shellUrl;
-  shellLink.download = 'google_auth_bridge.sh';
-  document.body.appendChild(shellLink);
-  shellLink.click();
-  document.body.removeChild(shellLink);
-  window.URL.revokeObjectURL(shellUrl);
-  
-  showNotification('Bridge scripts downloaded. Please run the shell script (google_auth_bridge.sh) on your Raspberry Pi to enable Google login.', 'info');
+  showNotification('Python bridge script downloaded. Please run it on your Raspberry Pi to enable Google login.', 'info');
 }
 
 // Create Python bridge script content
@@ -202,7 +187,7 @@ print("API Key:", API_KEY[:5] + "..." if API_KEY else "Not provided")
 print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
 
 # Web socket server to communicate with the web app
-async def auth_bridge(websocket, path):
+async def auth_bridge(websocket):
     print("Web client connected")
     
     async for message in websocket:
@@ -274,31 +259,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Bridge servers stopped.")
         sys.exit(0)
-`;
-}
-
-// Create shell script content
-function createShellScript() {
-  return `#!/bin/bash
-# Google Auth Bridge launcher
-# This script installs required dependencies and launches the Python bridge
-
-echo "Setting up Family Organizer Google Auth Bridge..."
-
-# Check if pip is installed
-if ! command -v pip3 &> /dev/null; then
-    echo "Python pip is not installed. Installing..."
-    sudo apt-get update
-    sudo apt-get install -y python3-pip
-fi
-
-# Install required Python packages
-echo "Installing required Python packages..."
-pip3 install websockets
-
-# Run the Python bridge
-echo "Starting Google Auth Bridge..."
-python3 google_auth_bridge.py
 `;
 }
 
