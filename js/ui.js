@@ -83,3 +83,35 @@ function showNotification(message, type = 'info') {
   
   return notification;
 }
+
+// Change view active view
+function changeView(viewName) {
+  if (!viewName || viewName === appState.currentView) return;
+  
+  // Update navigation items
+  document.querySelectorAll('.nav-item').forEach(item => {
+    if (item.dataset.view === viewName) {
+      item.classList.add('active');
+    } else {
+      item.classList.remove('active');
+    }
+  });
+  
+  // Update view containers
+  document.querySelectorAll('.view-container').forEach(container => {
+    if (container.id === `${viewName}-view`) {
+      container.classList.add('active-view');
+    } else {
+      container.classList.remove('active-view');
+    }
+  });
+  
+  // Update URL hash
+  window.location.hash = viewName;
+  
+  // Update current view in app state
+  appState.currentView = viewName;
+  
+  // Load view-specific data
+  loadViewData(viewName);
+}

@@ -10,8 +10,13 @@ function initGoogleAuth() {
   // Load the Google API client
   gapi.load('client:auth2', initGoogleClient);
   
-  // Set up auth-related DOM event listeners
-  document.getElementById('login-button').addEventListener('click', handleLogin);
+  // Set up auth-related DOM event listeners - Only if the element exists
+  const loginButton = document.getElementById('login-button');
+  if (loginButton) {
+    loginButton.addEventListener('click', handleLogin);
+  } else {
+    console.warn('Login button not found in the DOM. Auth event listeners will be added when UI is initialized.');
+  }
 }
 
 // Initialize Google API client
@@ -288,4 +293,3 @@ function getNextFamilyColor() {
   // Return the first unused color or the first color if all are used
   return availableColor || colors[0];
 }
-
