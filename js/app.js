@@ -77,25 +77,16 @@ function setupEventListeners() {
   // Window hash change events
   window.addEventListener('hashchange', handleHashChange);
 
-  // Modal events - Check if elements exist before adding listeners
-  const modalOverlay = document.querySelector('.modal-overlay');
-  const modalClose = document.querySelector('.modal-close');
-  const modalCancel = document.querySelector('.modal-cancel');
-  const modalConfirm = document.querySelector('.modal-confirm');
-  
-  if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
-  if (modalClose) modalClose.addEventListener('click', closeModal);
-  if (modalCancel) modalCancel.addEventListener('click', closeModal);
-  if (modalConfirm) modalConfirm.addEventListener('click', handleModalConfirm);
+  // Modal events
+  document.querySelector('.modal-overlay').addEventListener('click', closeModal);
+  document.querySelector('.modal-close').addEventListener('click', closeModal);
+  document.querySelector('.modal-cancel').addEventListener('click', closeModal);
+  document.querySelector('.modal-confirm').addEventListener('click', handleModalConfirm);
 
   // User profile events
-  const logoutLink = document.getElementById('logout-link');
-  const profileLink = document.getElementById('profile-link');
-  const settingsLink = document.getElementById('settings-link');
-  
-  if (logoutLink) logoutLink.addEventListener('click', handleLogout);
-  if (profileLink) profileLink.addEventListener('click', showProfileModal);
-  if (settingsLink) settingsLink.addEventListener('click', showSettingsModal);
+  document.getElementById('logout-link').addEventListener('click', handleLogout);
+  document.getElementById('profile-link').addEventListener('click', showProfileModal);
+  document.getElementById('settings-link').addEventListener('click', showSettingsModal);
 }
 
 // Handle navigation item clicks
@@ -634,3 +625,4 @@ function getColorForId(colorId) {
 
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initApp);
+

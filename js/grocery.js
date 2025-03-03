@@ -1,4 +1,4 @@
-// Grocery list functionality for the Family Organizer app
+// Grocery management functionality for the Family Organizer app
 
 // Initialize grocery view
 function initGroceryView() {
@@ -19,7 +19,7 @@ function initGroceryView() {
     return;
   }
   
-  // Load grocery interface
+  // Load grocery list interface
   loadGroceryList();
 }
 
@@ -34,130 +34,59 @@ async function loadGroceryList() {
       <h1>Grocery List</h1>
       
       <div class="grocery-controls">
-        <div class="list-controls">
-          <button id="new-list-btn" class="btn btn-outline">
-            <i class="material-icons">playlist_add</i>
-            <span>New List</span>
-          </button>
-          <select id="list-filter">
-            <option value="active">Current Items</option>
-            <option value="completed">Completed Items</option>
+        <div class="filter-controls">
+          <select id="grocery-filter">
             <option value="all">All Items</option>
+            <option value="active">Active Items</option>
+            <option value="completed">Completed Items</option>
+          </select>
+          
+          <select id="grocery-category-filter">
+            <option value="all">All Categories</option>
+            <option value="produce">Produce</option>
+            <option value="meat">Meat & Seafood</option>
+            <option value="dairy">Dairy</option>
+            <option value="bakery">Bakery</option>
+            <option value="canned">Canned Goods</option>
+            <option value="dry goods">Dry Goods</option>
+            <option value="frozen">Frozen</option>
+            <option value="beverages">Beverages</option>
+            <option value="snacks">Snacks</option>
+            <option value="condiments">Condiments</option>
+            <option value="other">Other</option>
           </select>
         </div>
         
-        <div class="item-controls">
-          <button id="add-item-btn" class="btn btn-primary">
-            <i class="material-icons">add</i>
-            <span>Add Item</span>
-          </button>
-          <button id="clear-completed-btn" class="btn btn-outline">
-            <i class="material-icons">delete_sweep</i>
-            <span>Clear Completed</span>
-          </button>
+        <button id="add-grocery-item-btn" class="btn btn-primary">
+          <i class="material-icons">add</i>
+          <span>Add Item</span>
+        </button>
+      </div>
+      
+      <div class="grocery-list-container">
+        <div class="grocery-categories" id="grocery-categories">
+          <!-- Categories will be added here -->
         </div>
       </div>
       
-      <div class="grocery-content">
-        <div class="categories-sidebar">
-          <div class="category-item selected" data-category="all">
-            <i class="material-icons">list</i>
-            <span>All Items</span>
-            <span class="item-count" id="all-count">0</span>
-          </div>
-          <div class="category-item" data-category="produce">
-            <i class="material-icons">eco</i>
-            <span>Produce</span>
-            <span class="item-count" id="produce-count">0</span>
-          </div>
-          <div class="category-item" data-category="dairy">
-            <i class="material-icons">opacity</i>
-            <span>Dairy</span>
-            <span class="item-count" id="dairy-count">0</span>
-          </div>
-          <div class="category-item" data-category="meat">
-            <i class="material-icons">restaurant</i>
-            <span>Meat</span>
-            <span class="item-count" id="meat-count">0</span>
-          </div>
-          <div class="category-item" data-category="bakery">
-            <i class="material-icons">cake</i>
-            <span>Bakery</span>
-            <span class="item-count" id="bakery-count">0</span>
-          </div>
-          <div class="category-item" data-category="canned">
-            <i class="material-icons">lunch_dining</i>
-            <span>Canned & Packaged</span>
-            <span class="item-count" id="canned-count">0</span>
-          </div>
-          <div class="category-item" data-category="frozen">
-            <i class="material-icons">ac_unit</i>
-            <span>Frozen</span>
-            <span class="item-count" id="frozen-count">0</span>
-          </div>
-          <div class="category-item" data-category="beverages">
-            <i class="material-icons">local_drink</i>
-            <span>Beverages</span>
-            <span class="item-count" id="beverages-count">0</span>
-          </div>
-          <div class="category-item" data-category="household">
-            <i class="material-icons">home</i>
-            <span>Household</span>
-            <span class="item-count" id="household-count">0</span>
-          </div>
-          <div class="category-item" data-category="other">
-            <i class="material-icons">more_horiz</i>
-            <span>Other</span>
-            <span class="item-count" id="other-count">0</span>
-          </div>
-        </div>
-        
-        <div class="grocery-items-container">
-          <div class="grocery-header">
-            <div class="search-bar">
-              <i class="material-icons">search</i>
-              <input type="text" id="item-search" placeholder="Search items...">
-            </div>
-            <div class="sort-controls">
-              <label for="sort-by">Sort by:</label>
-              <select id="sort-by">
-                <option value="category">Category</option>
-                <option value="name">Name</option>
-                <option value="date">Date Added</option>
-              </select>
-            </div>
-          </div>
-          
-          <div class="grocery-list" id="grocery-items">
-            <!-- Grocery items will be loaded here -->
-            <div class="placeholder-message">
-              <i class="material-icons">shopping_cart</i>
-              <p>Your grocery list is empty</p>
-            </div>
-          </div>
-        </div>
+      <div class="grocery-actions">
+        <button id="clear-completed-btn" class="btn btn-outline">
+          <i class="material-icons">delete_sweep</i>
+          <span>Clear Completed</span>
+        </button>
+        <button id="print-grocery-btn" class="btn btn-outline">
+          <i class="material-icons">print</i>
+          <span>Print List</span>
+        </button>
       </div>
     `;
     
     // Set up event listeners
-    document.getElementById('new-list-btn').addEventListener('click', createNewList);
-    document.getElementById('add-item-btn').addEventListener('click', showAddItemModal);
+    document.getElementById('grocery-filter').addEventListener('change', filterGroceryItems);
+    document.getElementById('grocery-category-filter').addEventListener('change', filterGroceryItems);
+    document.getElementById('add-grocery-item-btn').addEventListener('click', showAddGroceryItemModal);
     document.getElementById('clear-completed-btn').addEventListener('click', clearCompletedItems);
-    document.getElementById('list-filter').addEventListener('change', filterItems);
-    document.getElementById('sort-by').addEventListener('change', sortItems);
-    document.getElementById('item-search').addEventListener('input', searchItems);
-    
-    // Set up category filters
-    document.querySelectorAll('.category-item').forEach(category => {
-      category.addEventListener('click', () => {
-        // Remove selected class from all categories
-        document.querySelectorAll('.category-item').forEach(c => c.classList.remove('selected'));
-        // Add selected class to clicked category
-        category.classList.add('selected');
-        // Filter items by category
-        filterItemsByCategory(category.dataset.category);
-      });
-    });
+    document.getElementById('print-grocery-btn').addEventListener('click', printGroceryList);
     
     // Load grocery items
     await refreshGroceryItems();
@@ -168,35 +97,27 @@ async function loadGroceryList() {
   }
 }
 
-// Refresh grocery items from database
+// Refresh grocery items based on current filters
 async function refreshGroceryItems() {
   try {
-    // Get items from database
-    const items = await getGroceryItems();
+    // Get filter values
+    const filterType = document.getElementById('grocery-filter').value;
+    const categoryFilter = document.getElementById('grocery-category-filter').value;
     
-    // Get filter and sort values
-    const filterValue = document.getElementById('list-filter').value;
-    const sortValue = document.getElementById('sort-by').value;
-    const activeCategory = document.querySelector('.category-item.selected').dataset.category;
+    // Get all grocery items
+    let items = await getGroceryItems();
     
     // Apply filters
-    let filteredItems = filterItemsByStatus(items, filterValue);
+    items = filterGroceryByType(items, filterType);
+    items = filterGroceryByCategory(items, categoryFilter);
     
-    // Only filter by category if not "all"
-    if (activeCategory !== 'all') {
-      filteredItems = filteredItems.filter(item => item.category === activeCategory);
-    }
-    
-    // Apply sorting
-    sortItemsBy(filteredItems, sortValue);
+    // Group items by category
+    const itemsByCategory = groupItemsByCategory(items);
     
     // Update the UI
-    updateGroceryItemsUI(filteredItems);
+    updateGroceryList(itemsByCategory);
     
-    // Update category counts
-    updateCategoryCounts(items);
-    
-    return filteredItems;
+    return items;
   } catch (error) {
     console.error('Error refreshing grocery items:', error);
     showNotification('Failed to load grocery items', 'error');
@@ -204,162 +125,243 @@ async function refreshGroceryItems() {
   }
 }
 
-// Filter items by status
-function filterItemsByStatus(items, filterValue) {
-  switch (filterValue) {
-    case 'active':
-      return items.filter(item => !item.completed);
-    case 'completed':
-      return items.filter(item => item.completed);
-    case 'all':
-    default:
-      return items;
+// Filter grocery items by type (all, active, completed)
+function filterGroceryByType(items, filterType) {
+  if (filterType === 'all') {
+    return items;
   }
-}
-
-// Filter items by category
-function filterItemsByCategory(category) {
-  // Trigger refresh with current filters
-  refreshGroceryItems();
-}
-
-// Sort items by specified field
-function sortItemsBy(items, sortValue) {
-  switch (sortValue) {
-    case 'name':
-      items.sort((a, b) => a.name.localeCompare(b.name));
-      break;
-    case 'date':
-      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      break;
-    case 'category':
-    default:
-      items.sort((a, b) => a.category.localeCompare(b.category));
-      break;
-  }
-  return items;
-}
-
-// Update the grocery items UI
-function updateGroceryItemsUI(items) {
-  const container = document.getElementById('grocery-items');
   
-  if (!items || items.length === 0) {
-    container.innerHTML = `
+  return items.filter(item => {
+    if (filterType === 'active') {
+      return !item.completed;
+    } else if (filterType === 'completed') {
+      return item.completed;
+    }
+    return true;
+  });
+}
+
+// Filter grocery items by category
+function filterGroceryByCategory(items, categoryFilter) {
+  if (categoryFilter === 'all') {
+    return items;
+  }
+  
+  return items.filter(item => item.category === categoryFilter);
+}
+
+// Group items by category
+function groupItemsByCategory(items) {
+  const groups = {};
+  
+  items.forEach(item => {
+    const category = item.category || 'other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(item);
+  });
+  
+  return groups;
+}
+
+// Update the grocery list UI
+function updateGroceryList(itemsByCategory) {
+  const categoriesContainer = document.getElementById('grocery-categories');
+  categoriesContainer.innerHTML = '';
+  
+  // Check if there are no items
+  if (Object.keys(itemsByCategory).length === 0) {
+    categoriesContainer.innerHTML = `
       <div class="placeholder-message">
         <i class="material-icons">shopping_cart</i>
-        <p>Your grocery list is empty</p>
+        <p>No grocery items found</p>
       </div>
     `;
     return;
   }
   
-  // Group items by category
-  const itemsByCategory = {};
-  items.forEach(item => {
-    if (!itemsByCategory[item.category]) {
-      itemsByCategory[item.category] = [];
-    }
-    itemsByCategory[item.category].push(item);
+  // Get category names in a specific order
+  const categoryOrder = [
+    'produce', 'meat', 'dairy', 'bakery', 'canned', 
+    'dry goods', 'frozen', 'beverages', 'snacks', 'condiments', 'other'
+  ];
+  
+  // Sort categories
+  const sortedCategories = Object.keys(itemsByCategory).sort((a, b) => {
+    const indexA = categoryOrder.indexOf(a);
+    const indexB = categoryOrder.indexOf(b);
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
   });
   
-  let html = '';
-  
-  // Generate HTML for each category
-  Object.keys(itemsByCategory).sort().forEach(category => {
-    html += `
-      <div class="category-group">
-        <div class="category-header">
-          <h3>${capitalizeFirstLetter(category)}</h3>
-        </div>
-        <div class="category-items">
+  // Create sections for each category
+  sortedCategories.forEach(category => {
+    const items = itemsByCategory[category];
+    if (items.length === 0) return;
+    
+    const categorySection = document.createElement('div');
+    categorySection.className = 'grocery-category';
+    
+    // Category header
+    const categoryHeader = document.createElement('div');
+    categoryHeader.className = 'category-header';
+    categoryHeader.innerHTML = `
+      <h3>${capitalizeFirstLetter(category)}</h3>
+      <span class="item-count">${items.length}</span>
     `;
     
-    // Add items for this category
-    itemsByCategory[category].forEach(item => {
-      html += `
-        <div class="grocery-item ${item.completed ? 'completed' : ''}" data-item-id="${item.id}">
-          <div class="item-checkbox">
-            <input type="checkbox" id="item-${item.id}" ${item.completed ? 'checked' : ''}>
-            <label for="item-${item.id}"></label>
-          </div>
-          <div class="item-content">
-            <div class="item-name-container">
-              <div class="item-name">${item.name}</div>
-              ${item.quantity ? `<div class="item-quantity">${item.quantity} ${item.unit || ''}</div>` : ''}
+    // Category items
+    const itemsList = document.createElement('div');
+    itemsList.className = 'grocery-items';
+    
+    items.forEach(item => {
+      const itemElement = document.createElement('div');
+      itemElement.className = `grocery-item ${item.completed ? 'completed' : ''}`;
+      itemElement.dataset.itemId = item.id;
+      
+      itemElement.innerHTML = `
+        <div class="item-checkbox">
+          <input type="checkbox" id="item-${item.id}" ${item.completed ? 'checked' : ''}>
+          <label for="item-${item.id}"></label>
+        </div>
+        <div class="item-content">
+          <div class="item-name">${item.name}</div>
+          ${item.quantity ? `
+            <div class="item-details">
+              <span class="item-quantity">${item.quantity} ${item.unit || ''}</span>
             </div>
-            ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
-          </div>
-          <div class="item-actions">
-            <button class="btn btn-icon edit-item-btn" data-item-id="${item.id}">
-              <i class="material-icons">edit</i>
-            </button>
-            <button class="btn btn-icon delete-item-btn" data-item-id="${item.id}">
-              <i class="material-icons">delete</i>
-            </button>
-          </div>
+          ` : ''}
+          ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          <button class="btn btn-icon edit-item-btn" data-item-id="${item.id}">
+            <i class="material-icons">edit</i>
+          </button>
+          <button class="btn btn-icon delete-item-btn" data-item-id="${item.id}">
+            <i class="material-icons">delete</i>
+          </button>
         </div>
       `;
+      
+      itemsList.appendChild(itemElement);
     });
     
-    html += `
+    categorySection.appendChild(categoryHeader);
+    categorySection.appendChild(itemsList);
+    categoriesContainer.appendChild(categorySection);
+  });
+  
+  // Add event listeners to checkboxes and buttons
+  document.querySelectorAll('.item-checkbox input').forEach(checkbox => {
+    checkbox.addEventListener('change', handleGroceryItemCheckboxChange);
+  });
+  
+  document.querySelectorAll('.edit-item-btn').forEach(button => {
+    button.addEventListener('click', handleEditGroceryItemClick);
+  });
+  
+  document.querySelectorAll('.delete-item-btn').forEach(button => {
+    button.addEventListener('click', handleDeleteGroceryItemClick);
+  });
+}
+
+// Show add grocery item modal
+function showAddGroceryItemModal() {
+  const content = `
+    <form id="add-grocery-item-form" class="grocery-form">
+      <div class="form-group">
+        <label for="item-name">Item Name *</label>
+        <input type="text" id="item-name" required placeholder="Enter item name">
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="item-quantity">Quantity</label>
+          <input type="number" id="item-quantity" min="1" value="1">
+        </div>
+        
+        <div class="form-group">
+          <label for="item-unit">Unit</label>
+          <input type="text" id="item-unit" placeholder="e.g., lb, oz, pkg">
         </div>
       </div>
-    `;
-  });
+      
+      <div class="form-group">
+        <label for="item-category">Category</label>
+        <select id="item-category">
+          <option value="produce">Produce</option>
+          <option value="meat">Meat & Seafood</option>
+          <option value="dairy">Dairy</option>
+          <option value="bakery">Bakery</option>
+          <option value="canned">Canned Goods</option>
+          <option value="dry goods">Dry Goods</option>
+          <option value="frozen">Frozen</option>
+          <option value="beverages">Beverages</option>
+          <option value="snacks">Snacks</option>
+          <option value="condiments">Condiments</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="item-notes">Notes</label>
+        <textarea id="item-notes" rows="2" placeholder="Optional notes about this item"></textarea>
+      </div>
+    </form>
+  `;
   
-  container.innerHTML = html;
-  
-  // Add event listeners
-  container.querySelectorAll('.item-checkbox input').forEach(checkbox => {
-    checkbox.addEventListener('change', handleItemCheckboxChange);
-  });
-  
-  container.querySelectorAll('.edit-item-btn').forEach(button => {
-    button.addEventListener('click', handleEditItemClick);
-  });
-  
-  container.querySelectorAll('.delete-item-btn').forEach(button => {
-    button.addEventListener('click', handleDeleteItemClick);
-  });
+  showModal('Add Grocery Item', content, handleAddGroceryItem);
 }
 
-// Update category counts
-function updateCategoryCounts(items) {
-  // Count items in each category
-  const counts = {
-    all: items.length,
-    produce: 0,
-    dairy: 0,
-    meat: 0,
-    bakery: 0,
-    canned: 0,
-    frozen: 0,
-    beverages: 0,
-    household: 0,
-    other: 0
-  };
+// Handle adding a grocery item
+async function handleAddGroceryItem() {
+  const form = document.getElementById('add-grocery-item-form');
   
-  // Count items by category
-  items.forEach(item => {
-    if (counts[item.category] !== undefined) {
-      counts[item.category]++;
-    } else {
-      counts.other++;
-    }
-  });
+  // Basic validation
+  if (!form.checkValidity()) {
+    showNotification('Please fill out all required fields', 'error');
+    return;
+  }
   
-  // Update count elements
-  Object.keys(counts).forEach(category => {
-    const countElement = document.getElementById(`${category}-count`);
-    if (countElement) {
-      countElement.textContent = counts[category];
-    }
-  });
+  try {
+    const name = document.getElementById('item-name').value;
+    const quantity = document.getElementById('item-quantity').value;
+    const unit = document.getElementById('item-unit').value;
+    const category = document.getElementById('item-category').value;
+    const notes = document.getElementById('item-notes').value;
+    
+    // Create item object
+    const groceryItem = {
+      id: 'grocery_' + Date.now(),
+      name: name,
+      quantity: quantity ? parseFloat(quantity) : null,
+      unit: unit,
+      category: category,
+      notes: notes,
+      completed: false,
+      createdBy: appState.currentUser.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Save to database
+    await addGroceryItem(groceryItem);
+    
+    showNotification('Item added successfully', 'success');
+    
+    // Refresh grocery list
+    await refreshGroceryItems();
+    
+  } catch (error) {
+    console.error('Error adding grocery item:', error);
+    showNotification('Failed to add item', 'error');
+  }
 }
 
-// Handle item checkbox change
-async function handleItemCheckboxChange(event) {
+// Handle grocery item checkbox change
+async function handleGroceryItemCheckboxChange(event) {
   const checkbox = event.target;
   const itemId = checkbox.id.replace('item-', '');
   const completed = checkbox.checked;
@@ -387,9 +389,8 @@ async function handleItemCheckboxChange(event) {
       itemElement.classList.remove('completed');
     }
     
-    showNotification(`Item marked as ${completed ? 'purchased' : 'needed'}`, 'success');
   } catch (error) {
-    console.error('Error updating item:', error);
+    console.error('Error updating grocery item:', error);
     showNotification('Failed to update item', 'error');
     
     // Revert checkbox state
@@ -397,143 +398,8 @@ async function handleItemCheckboxChange(event) {
   }
 }
 
-// Filter items based on selected filter
-function filterItems() {
-  refreshGroceryItems();
-}
-
-// Sort items based on selected sort option
-function sortItems() {
-  refreshGroceryItems();
-}
-
-// Search items by name
-function searchItems() {
-  const searchTerm = document.getElementById('item-search').value.toLowerCase();
-  
-  // Get all grocery items
-  getGroceryItems().then(items => {
-    // Filter items by search term
-    const filteredItems = searchTerm 
-      ? items.filter(item => item.name.toLowerCase().includes(searchTerm))
-      : items;
-    
-    // Apply current filters
-    const filterValue = document.getElementById('list-filter').value;
-    let results = filterItemsByStatus(filteredItems, filterValue);
-    
-    // Apply current sort
-    const sortValue = document.getElementById('sort-by').value;
-    sortItemsBy(results, sortValue);
-    
-    // Update UI
-    updateGroceryItemsUI(results);
-  });
-}
-
-// Show add item modal
-function showAddItemModal() {
-  const content = `
-    <form id="add-item-form" class="item-form">
-      <div class="form-group">
-        <label for="item-name">Item Name *</label>
-        <input type="text" id="item-name" required placeholder="Enter item name">
-      </div>
-      
-      <div class="form-row">
-        <div class="form-group">
-          <label for="item-quantity">Quantity</label>
-          <input type="number" id="item-quantity" min="1" value="1">
-        </div>
-        
-        <div class="form-group">
-          <label for="item-unit">Unit</label>
-          <select id="item-unit">
-            <option value="">Select unit</option>
-            <option value="pkg">Package</option>
-            <option value="lb">Pound (lb)</option>
-            <option value="oz">Ounce (oz)</option>
-            <option value="g">Gram (g)</option>
-            <option value="kg">Kilogram (kg)</option>
-            <option value="l">Liter (l)</option>
-            <option value="ml">Milliliter (ml)</option>
-            <option value="ea">Each</option>
-            <option value="doz">Dozen</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label for="item-category">Category</label>
-        <select id="item-category" required>
-          <option value="produce">Produce</option>
-          <option value="dairy">Dairy</option>
-          <option value="meat">Meat</option>
-          <option value="bakery">Bakery</option>
-          <option value="canned">Canned & Packaged</option>
-          <option value="frozen">Frozen</option>
-          <option value="beverages">Beverages</option>
-          <option value="household">Household</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="item-notes">Notes</label>
-        <textarea id="item-notes" rows="2" placeholder="Add notes about brand, size, etc."></textarea>
-      </div>
-    </form>
-  `;
-  
-  showModal('Add Grocery Item', content, handleAddItem);
-}
-
-// Handle adding a new item
-async function handleAddItem() {
-  const form = document.getElementById('add-item-form');
-  
-  // Basic validation
-  if (!form.checkValidity()) {
-    showNotification('Please fill out all required fields', 'error');
-    return;
-  }
-  
-  try {
-    const name = document.getElementById('item-name').value;
-    const quantity = document.getElementById('item-quantity').value;
-    const unit = document.getElementById('item-unit').value;
-    const category = document.getElementById('item-category').value;
-    const notes = document.getElementById('item-notes').value;
-    
-    // Create item object
-    const item = {
-      id: 'grocery_' + Date.now(),
-      name: name,
-      quantity: parseInt(quantity) || 1,
-      unit: unit,
-      category: category,
-      notes: notes,
-      completed: false,
-      createdBy: appState.currentUser.id,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    // Save to database
-    await addGroceryItem(item);
-    
-    showNotification('Item added successfully', 'success');
-    
-    // Refresh grocery items
-    await refreshGroceryItems();
-  } catch (error) {
-    console.error('Error adding item:', error);
-    showNotification('Failed to add item', 'error');
-  }
-}
-
-// Handle editing an item
-function handleEditItemClick(event) {
+// Handle editing a grocery item
+function handleEditGroceryItemClick(event) {
   const itemId = event.currentTarget.dataset.itemId;
   
   // Get item from database
@@ -543,17 +409,17 @@ function handleEditItemClick(event) {
       return;
     }
     
-    showEditItemModal(item);
+    showEditGroceryItemModal(item);
   }).catch(error => {
-    console.error('Error loading item for edit:', error);
+    console.error('Error loading grocery item for edit:', error);
     showNotification('Failed to load item', 'error');
   });
 }
 
-// Show edit item modal
-function showEditItemModal(item) {
+// Show edit grocery item modal
+function showEditGroceryItemModal(item) {
   const content = `
-    <form id="edit-item-form" class="item-form" data-item-id="${item.id}">
+    <form id="edit-grocery-item-form" class="grocery-form" data-item-id="${item.id}">
       <div class="form-group">
         <label for="item-name">Item Name *</label>
         <input type="text" id="item-name" required placeholder="Enter item name" value="${item.name}">
@@ -567,57 +433,50 @@ function showEditItemModal(item) {
         
         <div class="form-group">
           <label for="item-unit">Unit</label>
-          <select id="item-unit">
-            <option value="" ${!item.unit ? 'selected' : ''}>Select unit</option>
-            <option value="pkg" ${item.unit === 'pkg' ? 'selected' : ''}>Package</option>
-            <option value="lb" ${item.unit === 'lb' ? 'selected' : ''}>Pound (lb)</option>
-            <option value="oz" ${item.unit === 'oz' ? 'selected' : ''}>Ounce (oz)</option>
-            <option value="g" ${item.unit === 'g' ? 'selected' : ''}>Gram (g)</option>
-            <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>Kilogram (kg)</option>
-            <option value="l" ${item.unit === 'l' ? 'selected' : ''}>Liter (l)</option>
-            <option value="ml" ${item.unit === 'ml' ? 'selected' : ''}>Milliliter (ml)</option>
-            <option value="ea" ${item.unit === 'ea' ? 'selected' : ''}>Each</option>
-            <option value="doz" ${item.unit === 'doz' ? 'selected' : ''}>Dozen</option>
+          <input type="text" id="item-unit" placeholder="e.g., lb, oz, pkg" value="${item.unit || ''}">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="item-category">Category</label>
+          <select id="item-category">
+            <option value="produce" ${item.category === 'produce' ? 'selected' : ''}>Produce</option>
+            <option value="meat" ${item.category === 'meat' ? 'selected' : ''}>Meat & Seafood</option>
+            <option value="dairy" ${item.category === 'dairy' ? 'selected' : ''}>Dairy</option>
+            <option value="bakery" ${item.category === 'bakery' ? 'selected' : ''}>Bakery</option>
+            <option value="canned" ${item.category === 'canned' ? 'selected' : ''}>Canned Goods</option>
+            <option value="dry goods" ${item.category === 'dry goods' ? 'selected' : ''}>Dry Goods</option>
+            <option value="frozen" ${item.category === 'frozen' ? 'selected' : ''}>Frozen</option>
+            <option value="beverages" ${item.category === 'beverages' ? 'selected' : ''}>Beverages</option>
+            <option value="snacks" ${item.category === 'snacks' ? 'selected' : ''}>Snacks</option>
+            <option value="condiments" ${item.category === 'condiments' ? 'selected' : ''}>Condiments</option>
+            <option value="other" ${item.category === 'other' ? 'selected' : ''}>Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="item-completed">Status</label>
+          <select id="item-completed">
+            <option value="false" ${!item.completed ? 'selected' : ''}>Active</option>
+            <option value="true" ${item.completed ? 'selected' : ''}>Completed</option>
           </select>
         </div>
       </div>
       
       <div class="form-group">
-        <label for="item-category">Category</label>
-        <select id="item-category" required>
-          <option value="produce" ${item.category === 'produce' ? 'selected' : ''}>Produce</option>
-          <option value="dairy" ${item.category === 'dairy' ? 'selected' : ''}>Dairy</option>
-          <option value="meat" ${item.category === 'meat' ? 'selected' : ''}>Meat</option>
-          <option value="bakery" ${item.category === 'bakery' ? 'selected' : ''}>Bakery</option>
-          <option value="canned" ${item.category === 'canned' ? 'selected' : ''}>Canned & Packaged</option>
-          <option value="frozen" ${item.category === 'frozen' ? 'selected' : ''}>Frozen</option>
-          <option value="beverages" ${item.category === 'beverages' ? 'selected' : ''}>Beverages</option>
-          <option value="household" ${item.category === 'household' ? 'selected' : ''}>Household</option>
-          <option value="other" ${item.category === 'other' ? 'selected' : ''}>Other</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="item-completed">Status</label>
-        <select id="item-completed">
-          <option value="false" ${!item.completed ? 'selected' : ''}>Needed</option>
-          <option value="true" ${item.completed ? 'selected' : ''}>Purchased</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
         <label for="item-notes">Notes</label>
-        <textarea id="item-notes" rows="2" placeholder="Add notes about brand, size, etc.">${item.notes || ''}</textarea>
+        <textarea id="item-notes" rows="2" placeholder="Optional notes about this item">${item.notes || ''}</textarea>
       </div>
     </form>
   `;
   
-  showModal('Edit Grocery Item', content, () => handleUpdateItem(item));
+  showModal('Edit Grocery Item', content, () => handleUpdateGroceryItem(item));
 }
 
-// Handle updating an item
-async function handleUpdateItem(originalItem) {
-  const form = document.getElementById('edit-item-form');
+// Handle updating a grocery item
+async function handleUpdateGroceryItem(originalItem) {
+  const form = document.getElementById('edit-grocery-item-form');
   
   // Basic validation
   if (!form.checkValidity()) {
@@ -638,11 +497,11 @@ async function handleUpdateItem(originalItem) {
     const updatedItem = {
       ...originalItem,
       name: name,
-      quantity: parseInt(quantity) || 1,
+      quantity: quantity ? parseFloat(quantity) : null,
       unit: unit,
       category: category,
-      completed: completed,
       notes: notes,
+      completed: completed,
       updatedAt: new Date().toISOString()
     };
     
@@ -651,16 +510,17 @@ async function handleUpdateItem(originalItem) {
     
     showNotification('Item updated successfully', 'success');
     
-    // Refresh grocery items
+    // Refresh grocery list
     await refreshGroceryItems();
+    
   } catch (error) {
-    console.error('Error updating item:', error);
+    console.error('Error updating grocery item:', error);
     showNotification('Failed to update item', 'error');
   }
 }
 
-// Handle deleting an item
-function handleDeleteItemClick(event) {
+// Handle deleting a grocery item
+function handleDeleteGroceryItemClick(event) {
   const itemId = event.currentTarget.dataset.itemId;
   
   // Show confirmation dialog
@@ -671,46 +531,52 @@ function handleDeleteItemClick(event) {
     </div>
   `;
   
-  showModal('Delete Item', confirmContent, () => confirmDeleteItem(itemId));
+  showModal('Delete Grocery Item', confirmContent, () => confirmDeleteGroceryItem(itemId));
 }
 
-// Confirm item deletion
-async function confirmDeleteItem(itemId) {
+// Confirm grocery item deletion
+async function confirmDeleteGroceryItem(itemId) {
   try {
     await deleteGroceryItem(itemId);
     
     showNotification('Item deleted successfully', 'success');
     
-    // Refresh grocery items
+    // Refresh grocery list
     await refreshGroceryItems();
+    
   } catch (error) {
-    console.error('Error deleting item:', error);
+    console.error('Error deleting grocery item:', error);
     showNotification('Failed to delete item', 'error');
   }
 }
 
+// Handle filtering grocery items
+function filterGroceryItems() {
+  refreshGroceryItems();
+}
+
 // Clear completed items
-function clearCompletedItems() {
+async function clearCompletedItems() {
   // Show confirmation dialog
   const confirmContent = `
     <div class="confirmation-dialog">
-      <p>Are you sure you want to remove all purchased items?</p>
+      <p>Are you sure you want to clear all completed items?</p>
       <p>This action cannot be undone.</p>
     </div>
   `;
   
-  showModal('Clear Purchased Items', confirmContent, confirmClearCompletedItems);
+  showModal('Clear Completed Items', confirmContent, confirmClearCompletedItems);
 }
 
 // Confirm clearing completed items
 async function confirmClearCompletedItems() {
   try {
-    // Get all completed items
-    const items = await getGroceryItems();
-    const completedItems = items.filter(item => item.completed);
+    // Get completed items
+    const allItems = await getGroceryItems();
+    const completedItems = allItems.filter(item => item.completed);
     
     if (completedItems.length === 0) {
-      showNotification('No purchased items to clear', 'info');
+      showNotification('No completed items to clear', 'info');
       return;
     }
     
@@ -719,81 +585,191 @@ async function confirmClearCompletedItems() {
       await deleteGroceryItem(item.id);
     }
     
-    showNotification(`Removed ${completedItems.length} purchased items`, 'success');
+    showNotification(`Cleared ${completedItems.length} completed items`, 'success');
     
-    // Refresh grocery items
+    // Refresh grocery list
     await refreshGroceryItems();
+    
   } catch (error) {
-    console.error('Error clearing purchased items:', error);
-    showNotification('Failed to clear purchased items', 'error');
+    console.error('Error clearing completed items:', error);
+    showNotification('Failed to clear completed items', 'error');
   }
 }
 
-// Create a new grocery list
-function createNewList() {
-  // Show confirmation dialog
-  const confirmContent = `
-    <div class="confirmation-dialog">
-      <p>Create a new grocery list?</p>
-      <p>This will archive your current list.</p>
+// Print grocery list
+function printGroceryList() {
+  // Show modal with print options
+  const content = `
+    <div class="print-options">
+      <div class="form-group">
+        <label for="print-filter">Include Items</label>
+        <select id="print-filter">
+          <option value="all">All Items</option>
+          <option value="active" selected>Active Items Only</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="print-sort">Sort By</label>
+        <select id="print-sort">
+          <option value="category" selected>Category</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Options</label>
+        <div class="checkbox-option">
+          <input type="checkbox" id="print-include-quantities" checked>
+          <label for="print-include-quantities">Include Quantities</label>
+        </div>
+        <div class="checkbox-option">
+          <input type="checkbox" id="print-include-notes">
+          <label for="print-include-notes">Include Notes</label>
+        </div>
+      </div>
     </div>
   `;
   
-  showModal('New Grocery List', confirmContent, confirmNewList);
+  showModal('Print Grocery List', content, executePrintGroceryList);
 }
 
-// Confirm creating a new list
-async function confirmNewList() {
+// Execute printing the grocery list
+async function executePrintGroceryList() {
   try {
-    // Get all current items
-    const items = await getGroceryItems();
+    // Get print options
+    const includeFilter = document.getElementById('print-filter').value;
+    const sortBy = document.getElementById('print-sort').value;
+    const includeQuantities = document.getElementById('print-include-quantities').checked;
+    const includeNotes = document.getElementById('print-include-notes').checked;
+    
+    // Get items
+    let items = await getGroceryItems();
+    
+    // Apply filter
+    if (includeFilter === 'active') {
+      items = items.filter(item => !item.completed);
+    }
     
     if (items.length === 0) {
-      showNotification('Your grocery list is already empty', 'info');
+      showNotification('No items to print', 'warning');
       return;
     }
     
-    // Create an archive record
-    const archive = {
-      id: 'archive_' + Date.now(),
-      name: `Grocery List ${new Date().toLocaleDateString()}`,
-      items: items,
-      createdBy: appState.currentUser.id,
-      createdAt: new Date().toISOString()
-    };
+    // Generate print content
+    let printContent = '';
     
-    // Save archive
-    await saveGroceryArchive(archive);
-    
-    // Delete all current items
-    for (const item of items) {
-      await deleteGroceryItem(item.id);
+    if (sortBy === 'category') {
+      // Group by category
+      const itemsByCategory = groupItemsByCategory(items);
+      
+      // Get sorted categories
+      const categoryOrder = [
+        'produce', 'meat', 'dairy', 'bakery', 'canned', 
+        'dry goods', 'frozen', 'beverages', 'snacks', 'condiments', 'other'
+      ];
+      
+      const sortedCategories = Object.keys(itemsByCategory).sort((a, b) => {
+        const indexA = categoryOrder.indexOf(a);
+        const indexB = categoryOrder.indexOf(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+      
+      // Generate HTML for each category
+      sortedCategories.forEach(category => {
+        const categoryItems = itemsByCategory[category];
+        if (categoryItems.length === 0) return;
+        
+        printContent += `
+          <div class="print-category">
+            <h3>${capitalizeFirstLetter(category)}</h3>
+            <ul>
+              ${categoryItems.map(item => `
+                <li>
+                  <span class="print-checkbox">☐</span>
+                  <span class="print-item-name">${item.name}</span>
+                  ${includeQuantities && item.quantity ? `
+                    <span class="print-item-quantity">(${item.quantity} ${item.unit || ''})</span>
+                  ` : ''}
+                  ${includeNotes && item.notes ? `
+                    <div class="print-item-notes">${item.notes}</div>
+                  ` : ''}
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        `;
+      });
+    } else {
+      // Sort by name
+      items.sort((a, b) => a.name.localeCompare(b.name));
+      
+      printContent += `
+        <div class="print-items">
+          <ul>
+            ${items.map(item => `
+              <li>
+                <span class="print-checkbox">☐</span>
+                <span class="print-item-name">${item.name}</span>
+                ${includeQuantities && item.quantity ? `
+                  <span class="print-item-quantity">(${item.quantity} ${item.unit || ''})</span>
+                ` : ''}
+                ${includeNotes && item.notes ? `
+                  <div class="print-item-notes">${item.notes}</div>
+                ` : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
     }
     
-    showNotification('Created new grocery list', 'success');
+    // Open print window
+    const printWindow = window.open('', '_blank');
     
-    // Refresh grocery items
-    await refreshGroceryItems();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Grocery List</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.5; }
+          h1 { color: #4285F4; }
+          h3 { margin-top: 20px; margin-bottom: 10px; color: #4285F4; }
+          ul { list-style-type: none; padding: 0; }
+          li { padding: 8px 0; }
+          .print-checkbox { display: inline-block; width: 20px; height: 20px; margin-right: 10px; }
+          .print-item-name { font-weight: bold; }
+          .print-item-quantity { color: #5f6368; margin-left: 10px; }
+          .print-item-notes { margin-left: 30px; font-size: 0.9em; color: #5f6368; }
+          .print-date { color: #5f6368; margin-bottom: 20px; }
+          .print-controls { margin-top: 20px; }
+          @media print {
+            .print-controls { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <h1>Grocery List</h1>
+        <div class="print-date">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
+        
+        ${printContent}
+        
+        <div class="print-controls">
+          <button onclick="window.print()">Print</button>
+          <button onclick="window.close()">Close</button>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
   } catch (error) {
-    console.error('Error creating new list:', error);
-    showNotification('Failed to create new list', 'error');
-  }
-}
-
-// Helper function to save grocery archive
-async function saveGroceryArchive(archive) {
-  if (!db) throw new Error('Database not initialized');
-  
-  try {
-    await db.put(stores.sync, {
-      id: archive.id,
-      entityType: 'groceryArchive',
-      data: archive
-    });
-    return true;
-  } catch (error) {
-    console.error('Error saving grocery archive:', error);
-    throw error;
+    console.error('Error printing grocery list:', error);
+    showNotification('Failed to print grocery list', 'error');
   }
 }
 
