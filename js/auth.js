@@ -7,78 +7,11 @@ let googleAuth = null;
 function initGoogleAuth() {
   console.log('Initializing Google authentication...');
   
-  if (config.useMockGoogleAPI) {
-    // Use mock authentication instead of actual Google Auth
-    initMockGoogleAuth();
-    return;
-  }
-  
   // Load the Google API client
   gapi.load('client:auth2', initGoogleClient);
   
   // Set up auth-related DOM event listeners
   document.getElementById('login-button').addEventListener('click', handleLogin);
-}
-
-// Initialize mock Google authentication for development/demo
-function initMockGoogleAuth() {
-  console.log('Using mock Google authentication');
-  
-  // Set up the login button
-  document.getElementById('login-button').addEventListener('click', handleMockLogin);
-  
-  // If we're in "auto-login" mode, trigger login automatically
-  if (localStorage.getItem('autoLogin') === 'true') {
-    setTimeout(handleMockLogin, 1000);
-  }
-}
-
-// Handle mock login
-function handleMockLogin() {
-  const mockUser = {
-    id: 'mock-user-123',
-    name: 'Demo User',
-    email: 'demo@example.com',
-    imageUrl: 'https://ui-avatars.com/api/?name=Demo+User&background=4285F4&color=fff',
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    authProvider: 'google',
-    accessToken: 'mock-access-token',
-    refreshToken: 'mock-refresh-token',
-    color: '#4285F4',
-    notifications: 'all'
-  };
-  
-  // Update app state
-  appState.currentUser = mockUser;
-  appState.isAuthenticated = true;
-  
-  // Update UI
-  updateSignInStatus(true);
-  
-  // Store in local storage for "auto-login"
-  localStorage.setItem('autoLogin', 'true');
-  
-  showNotification('Signed in with mock Google account', 'success');
-}
-
-// Handle mock logout
-function handleMockLogout(event) {
-  if (event) event.preventDefault();
-  
-  // Clear mock user data
-  appState.currentUser = null;
-  appState.isAuthenticated = false;
-  appState.family = [];
-  
-  // Update UI
-  updateSignInStatus(false);
-  
-  // Clear auto-login
-  localStorage.removeItem('autoLogin');
-  
-  showNotification('You have been signed out', 'info');
 }
 
 // Initialize Google API client
@@ -117,119 +50,65 @@ async function updateSignInStatus(isSignedIn) {
     loginButton.classList.add('hidden');
     userProfile.classList.remove('hidden');
     
-    if (config.useMockGoogleAPI) {
-      // Using mock data
-      const profile = appState.currentUser;
+    // Get user info
+    const googleUser = googleAuth.currentUser.get();
+    const profile = googleUser.getBasicProfile();
+    
+    // Set user information in the UI
+    document.getElementById('user-name').textContent = profile.getName();
+    document.getElementById('user-avatar').src = profile.getImageUrl();
+    
+    // Create user object
+    const user = {
+      id: profile.getId(),
+      name: profile.getName(),
+      email: profile.getEmail(),
+      imageUrl: profile.getImageUrl(),
+      role: 'admin', // Default role for Google account
+      createdAt: new Date().toISOString(),
+      lastLogin: new Date().toISOString(),
+      authProvider: 'google',
+      accessToken: googleUser.getAuthResponse().access_token,
+      refreshToken: null, // Not available in client-side flow
+      color: '#4285F4', // Default color
+      notifications: 'all', // Default notification setting
+    };
+    
+    // Update app state
+    appState.currentUser = user;
+    appState.isAuthenticated = true;
+    
+    // Store/update user in the database
+    try {
+      // Check if user already exists
+      const existingUser = await getUserById(user.id);
       
-      // Set user information in the UI
-      document.getElementById('user-name').textContent = profile.name;
-      document.getElementById('user-avatar').src = profile.imageUrl;
+      if (existingUser) {
+        // Update existing user
+        user.color = existingUser.color;
+        user.notifications = existingUser.notifications;
+        user.role = existingUser.role;
+        user.createdAt = existingUser.createdAt;
+        await updateUser(user);
+      } else {
+        // Create new user
+        await addUser(user);
+      }
       
-      // Create mock family members
-      const mockFamily = [
-        {
-          id: 'member_1',
-          userId: profile.id,
-          name: 'Alex Smith',
-          role: 'spouse',
-          color: 'var(--family-color-2)',
-          birthdate: '1985-06-15',
-          createdAt: new Date().toISOString(),
-          lastActivity: new Date().toISOString()
-        },
-        {
-          id: 'member_2',
-          userId: profile.id,
-          name: 'Emma Smith',
-          role: 'child',
-          color: 'var(--family-color-3)',
-          birthdate: '2010-03-22',
-          createdAt: new Date().toISOString(),
-          lastActivity: new Date().toISOString()
-        },
-        {
-          id: 'member_3',
-          userId: profile.id,
-          name: 'Liam Smith',
-          role: 'child',
-          color: 'var(--family-color-4)',
-          birthdate: '2013-11-08',
-          createdAt: new Date().toISOString(),
-          lastActivity: new Date().toISOString()
-        }
-      ];
+      // Load family members associated with this user
+      const familyMembers = await getFamilyMembersByUserId(user.id);
+      appState.family = familyMembers;
       
-      appState.family = mockFamily;
-      
-      // Load view data
+      // Update current view based on login
       loadViewData(appState.currentView);
       
-      // Create mock calendar data
-      initMockCalendarData();
+      // Start syncing with Google Calendar
+      initCalendarSync();
       
-      showNotification(`Welcome, ${profile.name}!`, 'success');
-    } else {
-      // User is signed in
-      // Get user info
-      const googleUser = googleAuth.currentUser.get();
-      const profile = googleUser.getBasicProfile();
-      
-      // Set user information in the UI
-      document.getElementById('user-name').textContent = profile.getName();
-      document.getElementById('user-avatar').src = profile.getImageUrl();
-      
-      // Create user object
-      const user = {
-        id: profile.getId(),
-        name: profile.getName(),
-        email: profile.getEmail(),
-        imageUrl: profile.getImageUrl(),
-        role: 'admin', // Default role for Google account
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        authProvider: 'google',
-        accessToken: googleUser.getAuthResponse().access_token,
-        refreshToken: null, // Not available in client-side flow
-        color: '#4285F4', // Default color
-        notifications: 'all', // Default notification setting
-      };
-      
-      // Update app state
-      appState.currentUser = user;
-      appState.isAuthenticated = true;
-      
-      // Store/update user in the database
-      try {
-        // Check if user already exists
-        const existingUser = await getUserById(user.id);
-        
-        if (existingUser) {
-          // Update existing user
-          user.color = existingUser.color;
-          user.notifications = existingUser.notifications;
-          user.role = existingUser.role;
-          user.createdAt = existingUser.createdAt;
-          await updateUser(user);
-        } else {
-          // Create new user
-          await addUser(user);
-        }
-        
-        // Load family members associated with this user
-        const familyMembers = await getFamilyMembersByUserId(user.id);
-        appState.family = familyMembers;
-        
-        // Update current view based on login
-        loadViewData(appState.currentView);
-        
-        // Start syncing with Google Calendar
-        initCalendarSync();
-        
-        showNotification(`Welcome, ${user.name}!`, 'success');
-      } catch (error) {
-        console.error('Error updating user data:', error);
-        showNotification('Error updating user profile', 'error');
-      }
+      showNotification(`Welcome, ${user.name}!`, 'success');
+    } catch (error) {
+      console.error('Error updating user data:', error);
+      showNotification('Error updating user profile', 'error');
     }
   } else {
     // User is signed out
@@ -268,14 +147,9 @@ function handleLogin() {
   });
 }
 
-// Handle logout button click
+// Handle logout
 function handleLogout(event) {
   event.preventDefault();
-  
-  if (config.useMockGoogleAPI) {
-    handleMockLogout();
-    return;
-  }
   
   if (!googleAuth) {
     showNotification('Google authentication is not initialized', 'error');
@@ -319,10 +193,6 @@ function updateUIForLoggedOut() {
 
 // Check if current auth token is valid
 async function isAuthTokenValid() {
-  if (config.useMockGoogleAPI) {
-    return true; // Mock token is always valid
-  }
-  
   if (!appState.isAuthenticated || !appState.currentUser || !appState.currentUser.accessToken) {
     return false;
   }
@@ -341,10 +211,6 @@ async function isAuthTokenValid() {
 
 // Refresh the access token if needed
 async function refreshAuthToken() {
-  if (config.useMockGoogleAPI) {
-    return true; // Mock token refresh always succeeds
-  }
-  
   if (!googleAuth) return false;
   
   try {
@@ -423,7 +289,3 @@ function getNextFamilyColor() {
   return availableColor || colors[0];
 }
 
-// Create mock calendar data
-function initMockCalendarData() {
-  // Implement mock calendar data creation
-}

@@ -2,13 +2,12 @@
 
 // Configuration object
 const config = {
-  googleClientId: 'mock-client-id', // Using mock values
-  googleApiKey: 'mock-api-key', // Using mock values 
+  googleClientId: 'YOUR_GOOGLE_CLIENT_ID',
+  googleApiKey: 'YOUR_GOOGLE_API_KEY',
   calendarScopes: 'https://www.googleapis.com/auth/calendar',
   appVersion: '1.0.0',
   dbVersion: 1,
-  syncInterval: 5 * 60 * 1000, 
-  useMockGoogleAPI: true // Flag to use mock Google API
+  syncInterval: 5 * 60 * 1000, // 5 minutes
 };
 
 // Global app state
@@ -608,21 +607,22 @@ async function handleTaskStatusChange(event) {
 // Helper function to get color for ID
 function getColorForId(colorId) {
   const colors = {
-    '1': '#7986CB', 
-    '2': '#33B679', 
-    '3': '#8E24AA', 
-    '4': '#E67C73', 
-    '5': '#F6BF26', 
-    '6': '#F4511E', 
-    '7': '#039BE5', 
-    '8': '#616161', 
-    '9': '#3F51B5', 
-    '10': '#0B8043', 
-    '11': '#D50000', 
+    '1': '#7986CB', // Lavender
+    '2': '#33B679', // Sage
+    '3': '#8E24AA', // Grape
+    '4': '#E67C73', // Flamingo
+    '5': '#F6BF26', // Banana
+    '6': '#F4511E', // Tangerine
+    '7': '#039BE5', // Peacock
+    '8': '#616161', // Graphite
+    '9': '#3F51B5', // Blueberry
+    '10': '#0B8043', // Basil
+    '11': '#D50000', // Tomato
   };
   
-  return colors[colorId] || '#4285F4'; 
+  return colors[colorId] || '#4285F4'; // Default to blue
 }
 
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initApp);
+
