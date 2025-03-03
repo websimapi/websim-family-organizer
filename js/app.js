@@ -2,12 +2,13 @@
 
 // Configuration object
 const config = {
-  googleClientId: '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com', 
-  googleApiKey: 'AIzaSyA1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q', 
+  googleClientId: 'mock-client-id', // Using mock values
+  googleApiKey: 'mock-api-key', // Using mock values 
   calendarScopes: 'https://www.googleapis.com/auth/calendar',
   appVersion: '1.0.0',
   dbVersion: 1,
   syncInterval: 5 * 60 * 1000, 
+  useMockGoogleAPI: true // Flag to use mock Google API
 };
 
 // Global app state

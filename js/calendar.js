@@ -24,6 +24,25 @@ async function initCalendarSync() {
   }
   
   try {
+    if (config.useMockGoogleAPI) {
+      // For mock API, we'll just use the mock data we already created
+      console.log('Using mock calendar data instead of syncing with Google Calendar');
+      calendarCache.lastSync = new Date();
+      appState.lastSync = new Date();
+      
+      // Update UI if calendar view is active
+      if (appState.currentView === 'calendar') {
+        refreshCalendarView();
+      }
+      
+      // Also update dashboard if it's active
+      if (appState.currentView === 'dashboard') {
+        updateDashboard();
+      }
+      
+      return;
+    }
+    
     // Check if token is valid, refresh if needed
     if (!(await isAuthTokenValid())) {
       const refreshed = await refreshAuthToken();
@@ -1660,6 +1679,21 @@ async function moveEventToDate(event, targetDate) {
 
 // Sync a new event to Google Calendar
 async function syncEventToGoogle(event) {
+  if (config.useMockGoogleAPI) {
+    console.log('Mock API: Syncing event to Google', event);
+    
+    // Just add a mock Google ID and return
+    const mockGoogleEvent = {
+      ...event,
+      googleId: 'google_' + Date.now()
+    };
+    
+    // Update in database
+    await updateEvent(mockGoogleEvent);
+    
+    return mockGoogleEvent;
+  }
+  
   if (!appState.isAuthenticated || !appState.isOnline) return;
   
   try {
@@ -1697,6 +1731,11 @@ async function syncEventToGoogle(event) {
 
 // Sync an updated event to Google Calendar
 async function syncEventUpdateToGoogle(event, originalCalendarId = null) {
+  if (config.useMockGoogleAPI) {
+    console.log('Mock API: Syncing event update to Google', event);
+    return event;
+  }
+  
   if (!appState.isAuthenticated || !appState.isOnline) return;
   
   try {
@@ -1748,6 +1787,11 @@ async function syncEventUpdateToGoogle(event, originalCalendarId = null) {
 
 // Sync a deleted event to Google Calendar
 async function syncEventDeleteToGoogle(event) {
+  if (config.useMockGoogleAPI) {
+    console.log('Mock API: Syncing event deletion to Google', event);
+    return true;
+  }
+  
   if (!appState.isAuthenticated || !appState.isOnline || !event.googleId) return;
   
   try {
@@ -1800,3 +1844,157 @@ function refreshCalendarView() {
   }
 }
 
+// Create mock calendar data
+function initMockCalendarData() {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  // Create mock calendars
+  const mockCalendars = [
+    {
+      id: 'primary',
+      summary: 'Demo User',
+      description: 'Main calendar',
+      backgroundColor: '#4285F4',
+      primary: true
+    },
+    {
+      id: 'family',
+      summary: 'Family',
+      description: 'Shared family calendar',
+      backgroundColor: '#0B8043',
+      primary: false
+    },
+    {
+      id: 'work',
+      summary: 'Work',
+      description: 'Work schedule',
+      backgroundColor: '#8E24AA',
+      primary: false
+    }
+  ];
+  
+  // Create mock events
+  const mockEvents = [
+    {
+      id: 'event_1',
+      summary: 'Team Meeting',
+      description: 'Weekly team status update',
+      location: 'Conference Room A',
+      calendarId: 'work',
+      colorId: '1',
+      start: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 11, 0, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_2',
+      summary: 'Dentist Appointment',
+      description: 'Regular checkup',
+      location: 'Dental Clinic',
+      calendarId: 'primary',
+      colorId: '4',
+      start: {
+        dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 14, 30, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 15, 30, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_3',
+      summary: 'Soccer Practice',
+      description: 'Emma\'s soccer practice',
+      location: 'Community Field',
+      calendarId: 'family',
+      colorId: '5',
+      start: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 17, 30, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_4',
+      summary: 'Science Fair',
+      description: 'Liam\'s science fair at school',
+      location: 'Elementary School',
+      calendarId: 'family',
+      colorId: '9',
+      start: {
+        dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 13, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate(), 15, 0, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_5',
+      summary: 'Anniversary Dinner',
+      description: 'Dinner reservation',
+      location: 'Bella Italia Restaurant',
+      calendarId: 'primary',
+      colorId: '10',
+      start: {
+        dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate() - 2, 19, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(nextWeek.getFullYear(), nextWeek.getMonth(), nextWeek.getDate() - 2, 21, 0, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_6',
+      summary: 'Project Deadline',
+      description: 'Final submission for Q2 project',
+      location: 'Office',
+      calendarId: 'work',
+      colorId: '11',
+      start: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3, 17, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3, 18, 0, 0).toISOString()
+      }
+    },
+    {
+      id: 'event_7',
+      summary: 'Family Movie Night',
+      description: 'Watch the new animated movie',
+      location: 'Living Room',
+      calendarId: 'family',
+      colorId: '3',
+      start: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 20, 0, 0).toISOString()
+      },
+      end: {
+        dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, 22, 0, 0).toISOString()
+      }
+    }
+  ];
+  
+  // Store in cache
+  calendarCache.calendars = mockCalendars;
+  calendarCache.events = mockEvents;
+  
+  // Also store in "database"
+  try {
+    const dbPromises = mockEvents.map(event => storeEvent(event));
+    Promise.all(dbPromises).then(() => {
+      console.log('Mock calendar events stored in database');
+    });
+    
+    // Save mock calendars
+    storeCalendars(mockCalendars);
+  } catch (error) {
+    console.error('Error storing mock calendar data:', error);
+  }
+}

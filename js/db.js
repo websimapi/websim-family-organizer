@@ -70,6 +70,22 @@ async function initDatabase() {
     return db;
   } catch (error) {
     console.error('Error initializing database:', error);
+    
+    // Create a fallback in-memory database for demo/development
+    if (config.useMockGoogleAPI) {
+      console.log('Creating in-memory mock database');
+      window.mockDB = {
+        users: [],
+        family: [],
+        events: [],
+        tasks: [],
+        meals: [],
+        groceries: [],
+        settings: [],
+        sync: []
+      };
+    }
+    
     throw error;
   }
 }
@@ -460,4 +476,3 @@ async function clearAllData() {
     throw error;
   }
 }
-
