@@ -2,8 +2,8 @@
 
 // Configuration object
 const config = {
-  googleClientId: 'YOUR_GOOGLE_CLIENT_ID',
-  googleApiKey: 'YOUR_GOOGLE_API_KEY',
+  googleClientId: '864838475869-jrg1s2odt5pq3lkapj5fmmfv8u0laiem.apps.googleusercontent.com',
+  googleApiKey: 'AIzaSyAPwTYREUq0vJSqxzceQVsra4wdmw3XyT4',
   calendarScopes: 'https://www.googleapis.com/auth/calendar',
   appVersion: '1.0.0',
   dbVersion: 1,
@@ -625,4 +625,3 @@ function getColorForId(colorId) {
 
 // Initialize the application when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initApp);
-
