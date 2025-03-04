@@ -24,7 +24,7 @@ print("API Key:", API_KEY[:5] + "..." if API_KEY else "Not provided")
 print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
 
 # Web socket server to communicate with the web app
-async def auth_bridge(websocket, path):
+async def auth_bridge(websocket):
     print("Web client connected")
     # The bridge now just confirms connectivity but doesn't trigger auth flow
     # Authentication happens directly in the browser

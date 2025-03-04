@@ -24,7 +24,7 @@ A comprehensive browser-based application designed to streamline household manag
 2. Create a new project
 3. Enable the Google Calendar API
 4. Create OAuth 2.0 credentials:
-   - Select "Web application" as the application type (NOT "Native Elliott" or other types)
+   - Select "Web application" as the application type (NOT "Native Desktop" or other types)
    - Add your domain to the authorized JavaScript origins (e.g., http://localhost:8000)
    - Add your domain + "/callback" to the authorized redirect URIs (e.g., http://localhost:8000/callback)
 5. Note your Client ID and API Key
