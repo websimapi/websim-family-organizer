@@ -23,7 +23,7 @@ async function initGoogleClient() {
       discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
       scope: config.calendarScopes,
       ux_mode: 'popup',
-      redirect_uri: window.location.origin + '/callback'
+      redirect_uri: window.location.origin
     });
     
     // Get the GoogleAuth instance
@@ -140,31 +140,23 @@ function handleLogin() {
   const socket = new WebSocket('ws://localhost:8765');
   
   socket.onopen = function() {
+    console.log('Connected to local authentication bridge');
     showNotification('Connected to local authentication bridge!', 'success');
+    socket.close();
     
-    // Initiate Google auth through the Python bridge
-    socket.send(JSON.stringify({
-      action: 'initiate_auth'
-    }));
-    
-    // Listen for auth result from the bridge
-    socket.onmessage = function(event) {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.status === 'success' && data.auth_code) {
-          showNotification('Authentication successful!', 'success');
-          
-          // Create mock Google user with the credentials
-          const mockUser = createMockGoogleUser(data.auth_code);
-          
-          // Update sign-in status
-          updateSignInStatus(true, mockUser);
-        }
-      } catch (error) {
-        console.error('Error parsing message from bridge:', error);
-      }
-    };
+    // Initiate Google auth directly in the browser
+    if (gapi && gapi.auth2) {
+      console.log('Triggering Google login popup');
+      gapi.auth2.getAuthInstance().signIn({
+        ux_mode: 'popup',
+        prompt: 'select_account'
+      }).catch(error => {
+        console.error('Error signing in:', error);
+        showErrorNotification(error);
+      });
+    } else {
+      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
+    }
   };
   
   socket.onerror = function() {
@@ -175,8 +167,10 @@ function handleLogin() {
     
     // Fall back to direct Google auth
     if (gapi && gapi.auth2) {
+      console.log('Triggering Google login popup');
       gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup'
+        ux_mode: 'popup',
+        prompt: 'select_account'
       }).catch(error => {
         console.error('Error signing in:', error);
         showErrorNotification(error);

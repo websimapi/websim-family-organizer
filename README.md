@@ -17,7 +17,6 @@ A comprehensive browser-based application designed to streamline household manag
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
 - Google account for calendar integration
 - Web server to host the application files (or run locally)
-- Python 3.7+ (for the authentication bridge)
 
 ### Google API Setup (IMPORTANT)
 
@@ -25,14 +24,22 @@ A comprehensive browser-based application designed to streamline household manag
 2. Create a new project
 3. Enable the Google Calendar API
 4. Create OAuth 2.0 credentials:
-   - Select "Web application" as the application type (NOT "Native Desktop")
-   - Add "http://localhost:8000" to the authorized JavaScript origins
-   - Add "http://localhost:8000/callback" to the authorized redirect URIs
+   - Select "Web application" as the application type (NOT "Native Desktop" or other types)
+   - Add your domain to the authorized JavaScript origins (e.g., http://localhost:8000)
+   - Add your domain + "/callback" to the authorized redirect URIs (e.g., http://localhost:8000/callback)
+5. Note your Client ID and API Key
 
-### Running the Authentication Bridge
+### Configuration
 
-1. Install required Python packages:
-
+1. Update the configuration in `js/app.js` with your Google API credentials:
+   ```javascript
+   const config = {
+     googleClientId: 'YOUR_CLIENT_ID',
+     googleApiKey: 'YOUR_API_KEY',
+     calendarScopes: 'https://www.googleapis.com/auth/calendar',
+     // other config options...
+   };
+```
 
 ## Usage
 
