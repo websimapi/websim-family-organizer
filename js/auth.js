@@ -21,7 +21,9 @@ async function initGoogleClient() {
       apiKey: config.googleApiKey,
       clientId: config.googleClientId,
       discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-      scope: config.calendarScopes
+      scope: config.calendarScopes,
+      ux_mode: 'popup',
+      redirect_uri: window.location.origin
     });
     
     // Get the GoogleAuth instance
@@ -139,18 +141,20 @@ function handleLogin() {
   
   socket.onopen = function() {
     showNotification('Connected to local authentication bridge!', 'success');
+    socket.close();
     
-    // Instead of delegating auth to Python, initiate Google auth directly
+    // Initiate Google auth directly in the browser
     if (gapi && gapi.auth2) {
-      gapi.auth2.getAuthInstance().signIn().catch(error => {
+      gapi.auth2.getAuthInstance().signIn({
+        ux_mode: 'popup',
+        prompt: 'select_account'
+      }).catch(error => {
         console.error('Error signing in:', error);
         showErrorNotification(error);
       });
     } else {
       showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
     }
-    
-    socket.close();
   };
   
   socket.onerror = function() {
@@ -161,7 +165,10 @@ function handleLogin() {
     
     // Fall back to direct Google auth
     if (gapi && gapi.auth2) {
-      gapi.auth2.getAuthInstance().signIn().catch(error => {
+      gapi.auth2.getAuthInstance().signIn({
+        ux_mode: 'popup',
+        prompt: 'select_account'
+      }).catch(error => {
         console.error('Error signing in:', error);
         showErrorNotification(error);
       });
@@ -220,7 +227,7 @@ print("API Key:", API_KEY[:5] + "..." if API_KEY else "Not provided")
 print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
 
 # Web socket server to communicate with the web app
-async def auth_bridge(websocket):
+async def auth_bridge(websocket, path):
     print("Web client connected")
     # The bridge now just confirms connectivity but doesn't trigger auth flow
     # Authentication happens directly in the browser
