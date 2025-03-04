@@ -140,49 +140,33 @@ function handleLogin() {
   socket.onopen = function() {
     showNotification('Connected to local authentication bridge!', 'success');
     
-    // Initiate authentication process
-    socket.send(JSON.stringify({
-      action: 'init_auth'
-    }));
-  };
-  
-  socket.onmessage = function(event) {
-    try {
-      const data = JSON.parse(event.data);
-      
-      if (data.status === 'success' && data.access_token) {
-        // Store tokens and update authentication state
-        storeAuthTokens(data.access_token, data.refresh_token);
-        
-        // Create a mock GoogleUser object for compatibility with existing code
-        const mockGoogleUser = createMockGoogleUser(data.access_token);
-        updateSignInStatus(true, mockGoogleUser);
-        
-        socket.close();
-      }
-    } catch (error) {
-      console.error('Error processing WebSocket message:', error);
-      showNotification('Error during authentication process', 'error');
+    // Instead of delegating auth to Python, initiate Google auth directly
+    if (gapi && gapi.auth2) {
+      gapi.auth2.getAuthInstance().signIn().catch(error => {
+        console.error('Error signing in:', error);
+        showErrorNotification(error);
+      });
+    } else {
+      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
     }
+    
+    socket.close();
   };
   
   socket.onerror = function() {
-    showNotification('Could not connect to local authentication bridge. Please ensure the Python script is running on your Raspberry Pi.', 'error');
+    showNotification('Could not connect to local authentication bridge. Using browser-only authentication.', 'warning');
     
     // Only trigger download of Python bridge script if connection failed
     downloadPythonBridge();
     
-    if (!googleAuth) {
-      showNotification('Falling back to direct Google authentication', 'info');
-      // Original Google auth code can still run as fallback if bridge is not found
-      if (gapi && gapi.auth2) {
-        gapi.auth2.getAuthInstance().signIn().catch(error => {
-          console.error('Error signing in:', error);
-          showErrorNotification(error);
-        });
-      } else {
-        showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-      }
+    // Fall back to direct Google auth
+    if (gapi && gapi.auth2) {
+      gapi.auth2.getAuthInstance().signIn().catch(error => {
+        console.error('Error signing in:', error);
+        showErrorNotification(error);
+      });
+    } else {
+      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
     }
   };
   
@@ -219,7 +203,6 @@ import json
 import sys
 import os
 import websockets
-import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 # Configuration
@@ -239,25 +222,8 @@ print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
 # Web socket server to communicate with the web app
 async def auth_bridge(websocket):
     print("Web client connected")
-    
-    async for message in websocket:
-        data = json.loads(message)
-        if data['action'] == 'init_auth':
-            print("Initializing Google authentication...")
-            # Open browser for OAuth authentication
-            auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={CLIENT_ID}&response_type=code&scope=https://www.googleapis.com/auth/calendar&redirect_uri=http://localhost:8000/callback"
-            webbrowser.open(auth_url)
-            
-        elif data['action'] == 'exchange_token':
-            # Process token exchange
-            print("Exchanging auth code for tokens...")
-            # Here you would implement the code exchange with Google
-            # For demo purposes, we're just sending back a success message
-            await websocket.send(json.dumps({
-                'status': 'success',
-                'access_token': 'sample_access_token',
-                'refresh_token': 'sample_refresh_token'
-            }))
+    # The bridge now just confirms connectivity but doesn't trigger auth flow
+    # Authentication happens directly in the browser
 
 # HTTP server to handle OAuth callback
 class CallbackHandler(BaseHTTPRequestHandler):
@@ -267,21 +233,12 @@ class CallbackHandler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             
-            # Extract auth code from query parameters
-            import urllib.parse
-            query = urllib.parse.urlparse(self.path).query
-            params = urllib.parse.parse_qs(query)
-            
             # Display success message to user
             self.wfile.write(b"""
                 <html>
                 <body>
-                    <h1>Authentication Successful</h1>
+                    <h1>Bridge Connected</h1>
                     <p>You can close this window and return to the Family Organizer app.</p>
-                    <script>
-                        window.opener && window.opener.postMessage({authComplete: true}, "*");
-                        window.close();
-                    </script>
                 </body>
                 </html>
             """)
