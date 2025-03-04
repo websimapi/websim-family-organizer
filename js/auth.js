@@ -23,7 +23,7 @@ async function initGoogleClient() {
       discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
       scope: config.calendarScopes,
       ux_mode: 'popup',
-      redirect_uri: window.location.origin
+      redirect_uri: window.location.origin + '/callback'
     });
     
     // Get the GoogleAuth instance
@@ -146,8 +146,7 @@ function handleLogin() {
     // Initiate Google auth directly in the browser
     if (gapi && gapi.auth2) {
       gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup',
-        prompt: 'select_account'
+        ux_mode: 'popup'
       }).catch(error => {
         console.error('Error signing in:', error);
         showErrorNotification(error);
@@ -166,8 +165,7 @@ function handleLogin() {
     // Fall back to direct Google auth
     if (gapi && gapi.auth2) {
       gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup',
-        prompt: 'select_account'
+        ux_mode: 'popup'
       }).catch(error => {
         console.error('Error signing in:', error);
         showErrorNotification(error);

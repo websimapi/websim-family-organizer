@@ -29,6 +29,13 @@ A comprehensive browser-based application designed to streamline household manag
    - Add your domain + "/callback" to the authorized redirect URIs (e.g., http://localhost:8000/callback)
 5. Note your Client ID and API Key
 
+### Redirect URI Configuration
+
+It's critical that your redirect URI matches exactly with what's configured in Google Cloud Console:
+- The application is setup to use: `[your-domain]/callback` as the redirect URI
+- Ensure this exact URI is added to the authorized redirect URIs in Google Cloud Console
+- Common errors like "redirect_uri_mismatch" occur when these don't match exactly
+
 ### Configuration
 
 1. Update the configuration in `js/app.js` with your Google API credentials:
