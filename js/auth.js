@@ -141,19 +141,30 @@ function handleLogin() {
   
   socket.onopen = function() {
     showNotification('Connected to local authentication bridge!', 'success');
-    socket.close();
     
-    // Initiate Google auth directly in the browser
-    if (gapi && gapi.auth2) {
-      gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup'
-      }).catch(error => {
-        console.error('Error signing in:', error);
-        showErrorNotification(error);
-      });
-    } else {
-      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-    }
+    // Initiate Google auth through the Python bridge
+    socket.send(JSON.stringify({
+      action: 'initiate_auth'
+    }));
+    
+    // Listen for auth result from the bridge
+    socket.onmessage = function(event) {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.status === 'success' && data.auth_code) {
+          showNotification('Authentication successful!', 'success');
+          
+          // Create mock Google user with the credentials
+          const mockUser = createMockGoogleUser(data.auth_code);
+          
+          // Update sign-in status
+          updateSignInStatus(true, mockUser);
+        }
+      } catch (error) {
+        console.error('Error parsing message from bridge:', error);
+      }
+    };
   };
   
   socket.onerror = function() {
