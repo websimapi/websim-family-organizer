@@ -388,6 +388,41 @@ h1 {
   gap: 16px;
 }
 
+/* Login/Register form styles */
+.login-modal {
+  width: 100%;
+}
+
+.login-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tab-button.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
 /* Notification Styles */
 #notification-container {
   position: fixed;
@@ -518,4 +553,3 @@ h1 {
     justify-content: space-between;
   }
 }
-

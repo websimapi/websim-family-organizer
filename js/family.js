@@ -136,7 +136,7 @@ async function refreshFamilyMembers() {
     const accountOwner = appState.currentUser;
     
     // Get family members
-    const familyMembers = await getFamilyMembers();
+    const familyMembers = appState.family;
     
     // Display account owner
     displayAccountOwner(accountOwner);
@@ -454,8 +454,21 @@ async function handleUpdateFamilyMember(originalMember) {
       updatedAt: new Date().toISOString()
     };
     
-    // Save to database
-    await updateFamilyMember(updatedMember);
+    // Find and update member in appState.family
+    const memberIndex = appState.family.findIndex(m => m.id === updatedMember.id);
+    if (memberIndex !== -1) {
+      appState.family[memberIndex] = updatedMember;
+      
+      // Save to localStorage
+      localStorage.setItem('familyMembers', JSON.stringify(appState.family));
+    }
+    
+    // Save to database if available
+    try {
+      await updateFamilyMember(updatedMember);
+    } catch (error) {
+      console.warn('Database update failed, using localStorage only', error);
+    }
     
     showNotification('Family member updated successfully', 'success');
     
@@ -490,18 +503,20 @@ async function confirmDeleteFamilyMember(memberId) {
     // Check for assigned tasks
     const tasks = await getTasksByAssignee(memberId);
     
-    // Delete family member
-    await deleteFamilyMember(memberId);
-    
-    // Update any tasks assigned to this member
-    if (tasks && tasks.length > 0) {
-      for (const task of tasks) {
-        task.assigneeId = null;
-        task.updatedAt = new Date().toISOString();
-        await updateTask(task);
-      }
+    // Remove from appState.family
+    const memberIndex = appState.family.findIndex(m => m.id === memberId);
+    if (memberIndex !== -1) {
+      appState.family.splice(memberIndex, 1);
       
-      showNotification(`Updated ${tasks.length} assigned tasks`, 'info');
+      // Save to localStorage
+      localStorage.setItem('familyMembers', JSON.stringify(appState.family));
+    }
+    
+    // Delete from database if available
+    try {
+      await deleteFamilyMember(memberId);
+    } catch (error) {
+      console.warn('Database delete failed, using localStorage only', error);
     }
     
     showNotification('Family member deleted successfully', 'success');

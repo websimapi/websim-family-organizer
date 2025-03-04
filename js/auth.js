@@ -1,49 +1,257 @@
 // Authentication functionality for the Family Organizer app
 
-// Google Auth object
-let googleAuth = null;
-
-// Initialize Google authentication
+// Initialize local authentication
 function initGoogleAuth() {
-  console.log('Initializing Google authentication...');
-  
-  // Load the Google API client
-  gapi.load('client:auth2', initGoogleClient);
+  console.log('Initializing local authentication...');
   
   // Set up auth-related DOM event listeners
-  document.getElementById('login-button').addEventListener('click', handleLogin);
+  document.getElementById('login-button').textContent = 'Login / Register';
+  document.getElementById('login-button').addEventListener('click', showLoginModal);
+  
+  // Check if user is already logged in
+  checkLocalStorageAuth();
 }
 
-// Initialize Google API client
-async function initGoogleClient() {
-  try {
-    await gapi.client.init({
-      apiKey: config.googleApiKey,
-      clientId: config.googleClientId,
-      discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-      scope: config.calendarScopes,
-      ux_mode: 'popup',
-      redirect_uri: window.location.origin
-    });
-    
-    // Get the GoogleAuth instance
-    googleAuth = gapi.auth2.getAuthInstance();
-    
-    // Listen for sign-in state changes
-    googleAuth.isSignedIn.listen(updateSignInStatus);
-    
-    // Handle the initial sign-in state
-    updateSignInStatus(googleAuth.isSignedIn.get());
-    
-    console.log('Google client initialized');
-  } catch (error) {
-    console.error('Error initializing Google client:', error);
-    showNotification('Failed to initialize Google services', 'error');
+// Check if user exists in local storage
+function checkLocalStorageAuth() {
+  const savedUser = localStorage.getItem('currentUser');
+  
+  if (savedUser) {
+    try {
+      const user = JSON.parse(savedUser);
+      
+      // Update app state
+      appState.currentUser = user;
+      appState.isAuthenticated = true;
+      
+      // Update UI
+      updateSignInStatus(true);
+      
+      // Load family members
+      loadFamilyMembers();
+    } catch (error) {
+      console.error('Error parsing saved user data:', error);
+      localStorage.removeItem('currentUser');
+    }
+  } else {
+    updateSignInStatus(false);
   }
 }
 
+// Load family members from localStorage
+async function loadFamilyMembers() {
+  try {
+    const savedFamilyMembers = localStorage.getItem('familyMembers');
+    
+    if (savedFamilyMembers) {
+      appState.family = JSON.parse(savedFamilyMembers);
+    } else {
+      appState.family = [];
+    }
+  } catch (error) {
+    console.error('Error loading family members:', error);
+    appState.family = [];
+  }
+}
+
+// Show login/register modal
+function showLoginModal() {
+  // Create modal content
+  const content = `
+    <div class="login-modal">
+      <div class="login-tabs">
+        <button id="login-tab" class="tab-button active">Login</button>
+        <button id="register-tab" class="tab-button">Register</button>
+      </div>
+      
+      <div id="login-form-container" class="tab-content active">
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required placeholder="Enter your email">
+          </div>
+          
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required placeholder="Enter your password">
+          </div>
+        </form>
+      </div>
+      
+      <div id="register-form-container" class="tab-content">
+        <form id="register-form">
+          <div class="form-group">
+            <label for="register-name">Full Name</label>
+            <input type="text" id="register-name" required placeholder="Enter your name">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" required placeholder="Enter your email">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password" required minlength="6" placeholder="Create a password">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-color">Your Color</label>
+            <input type="color" id="register-color" value="#4285F4">
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  
+  showModal('Welcome to Family Organizer', content, handleAuthSubmit);
+  
+  // Set up tab switching
+  document.getElementById('login-tab').addEventListener('click', () => {
+    document.getElementById('login-tab').classList.add('active');
+    document.getElementById('register-tab').classList.remove('active');
+    document.getElementById('login-form-container').classList.add('active');
+    document.getElementById('register-form-container').classList.remove('active');
+    
+    // Update modal button text
+    document.querySelector('.modal-confirm').textContent = 'Login';
+  });
+  
+  document.getElementById('register-tab').addEventListener('click', () => {
+    document.getElementById('login-tab').classList.remove('active');
+    document.getElementById('register-tab').classList.add('active');
+    document.getElementById('login-form-container').classList.remove('active');
+    document.getElementById('register-form-container').classList.add('active');
+    
+    // Update modal button text
+    document.querySelector('.modal-confirm').textContent = 'Register';
+  });
+  
+  // Set initial button text
+  document.querySelector('.modal-confirm').textContent = 'Login';
+}
+
+// Handle login/register form submission
+function handleAuthSubmit() {
+  // Check which tab is active
+  const isLoginTab = document.getElementById('login-tab').classList.contains('active');
+  
+  if (isLoginTab) {
+    // Handle login
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    
+    handleLogin(email, password);
+  } else {
+    // Handle registration
+    const name = document.getElementById('register-name').value;
+    const email = document.getElementById('register-email').value;
+    const password = document.getElementById('register-password').value;
+    const color = document.getElementById('register-color').value;
+    
+    handleRegistration(name, email, password, color);
+  }
+}
+
+// Handle login process
+function handleLogin(email, password) {
+  // Check if email exists in localStorage
+  const usersString = localStorage.getItem('users');
+  
+  if (!usersString) {
+    showNotification('No account found with this email', 'error');
+    return;
+  }
+  
+  const users = JSON.parse(usersString);
+  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  
+  if (!user) {
+    showNotification('No account found with this email', 'error');
+    return;
+  }
+  
+  // Check password
+  if (user.password !== password) {
+    showNotification('Incorrect password', 'error');
+    return;
+  }
+  
+  // Login successful
+  user.lastLogin = new Date().toISOString();
+  
+  // Update users array
+  const updatedUsers = users.map(u => u.id === user.id ? user : u);
+  localStorage.setItem('users', JSON.stringify(updatedUsers));
+  
+  // Store current user
+  localStorage.setItem('currentUser', JSON.stringify(user));
+  
+  // Update app state
+  appState.currentUser = user;
+  appState.isAuthenticated = true;
+  
+  // Update UI
+  updateSignInStatus(true);
+  
+  // Load family members
+  loadFamilyMembers();
+  
+  showNotification(`Welcome back, ${user.name}!`, 'success');
+}
+
+// Handle registration process
+function handleRegistration(name, email, password, color) {
+  // Check if email already exists
+  let users = [];
+  const usersString = localStorage.getItem('users');
+  
+  if (usersString) {
+    users = JSON.parse(usersString);
+    
+    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      showNotification('An account with this email already exists', 'error');
+      return;
+    }
+  }
+  
+  // Create new user
+  const newUser = {
+    id: 'user_' + Date.now(),
+    name: name,
+    email: email,
+    password: password, // In a real app, this should be hashed
+    imageUrl: null,
+    role: 'admin',
+    color: color,
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString(),
+    notifications: 'all'
+  };
+  
+  // Add to users array
+  users.push(newUser);
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  // Store current user
+  localStorage.setItem('currentUser', JSON.stringify(newUser));
+  
+  // Update app state
+  appState.currentUser = newUser;
+  appState.isAuthenticated = true;
+  
+  // Initialize empty family members array
+  appState.family = [];
+  localStorage.setItem('familyMembers', JSON.stringify([]));
+  
+  // Update UI
+  updateSignInStatus(true);
+  
+  showNotification(`Welcome, ${newUser.name}!`, 'success');
+}
+
 // Update UI based on sign-in status
-async function updateSignInStatus(isSignedIn, googleUser = null) {
+function updateSignInStatus(isSignedIn) {
   const loginButton = document.getElementById('login-button');
   const userProfile = document.getElementById('user-profile');
   
@@ -52,71 +260,23 @@ async function updateSignInStatus(isSignedIn, googleUser = null) {
     loginButton.classList.add('hidden');
     userProfile.classList.remove('hidden');
     
-    // Get user info - either from Google or from our bridge
-    let profile;
-    if (googleUser) {
-      profile = googleUser.getBasicProfile ? googleUser.getBasicProfile() : googleUser;
-    } else {
-      googleUser = googleAuth.currentUser.get();
-      profile = googleUser.getBasicProfile();
-    }
-    
     // Set user information in the UI
-    document.getElementById('user-name').textContent = profile.getName ? profile.getName() : profile.name;
-    document.getElementById('user-avatar').src = profile.getImageUrl ? profile.getImageUrl() : profile.imageUrl;
+    document.getElementById('user-name').textContent = appState.currentUser.name;
     
-    // Create user object
-    const user = {
-      id: profile.getId ? profile.getId() : profile.id,
-      name: profile.getName ? profile.getName() : profile.name,
-      email: profile.getEmail ? profile.getEmail() : profile.email,
-      imageUrl: profile.getImageUrl ? profile.getImageUrl() : profile.imageUrl,
-      role: 'admin', // Default role for Google account
-      createdAt: new Date().toISOString(),
-      lastLogin: new Date().toISOString(),
-      authProvider: 'google',
-      accessToken: googleUser.getAuthResponse ? googleUser.getAuthResponse().access_token : googleUser.access_token,
-      refreshToken: localStorage.getItem('googleRefreshToken') || null,
-      color: '#4285F4', // Default color
-      notifications: 'all', // Default notification setting
-    };
-    
-    // Update app state
-    appState.currentUser = user;
-    appState.isAuthenticated = true;
-    
-    // Store/update user in the database
-    try {
-      // Check if user already exists
-      const existingUser = await getUserById(user.id);
+    if (appState.currentUser.imageUrl) {
+      document.getElementById('user-avatar').src = appState.currentUser.imageUrl;
+    } else {
+      // Create initial-based avatar
+      const initials = appState.currentUser.name.split(' ')
+        .map(part => part.charAt(0).toUpperCase())
+        .join('')
+        .substring(0, 2);
       
-      if (existingUser) {
-        // Update existing user
-        user.color = existingUser.color;
-        user.notifications = existingUser.notifications;
-        user.role = existingUser.role;
-        user.createdAt = existingUser.createdAt;
-        await updateUser(user);
-      } else {
-        // Create new user
-        await addUser(user);
-      }
-      
-      // Load family members associated with this user
-      const familyMembers = await getFamilyMembersByUserId(user.id);
-      appState.family = familyMembers;
-      
-      // Update current view based on login
-      loadViewData(appState.currentView);
-      
-      // Start syncing with Google Calendar
-      initCalendarSync();
-      
-      showNotification(`Welcome, ${user.name}!`, 'success');
-    } catch (error) {
-      console.error('Error updating user data:', error);
-      showNotification('Error updating user profile', 'error');
+      document.getElementById('user-avatar').src = createInitialsAvatar(initials, appState.currentUser.color);
     }
+    
+    // Update current view based on login
+    loadViewData(appState.currentView);
   } else {
     // User is signed out
     loginButton.classList.remove('hidden');
@@ -134,268 +294,44 @@ async function updateSignInStatus(isSignedIn, googleUser = null) {
   }
 }
 
-// Handle login button click
-function handleLogin() {
-  // Check for local WebSocket connection to the Python bridge first
-  const socket = new WebSocket('ws://localhost:8765');
+// Create a data URL for an initials avatar
+function createInitialsAvatar(initials, bgColor) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 100;
+  canvas.height = 100;
   
-  socket.onopen = function() {
-    console.log('Connected to local authentication bridge');
-    showNotification('Connected to local authentication bridge!', 'success');
-    socket.close();
-    
-    // Initiate Google auth directly in the browser
-    if (gapi && gapi.auth2) {
-      console.log('Triggering Google login popup');
-      gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup',
-        prompt: 'select_account'
-      }).catch(error => {
-        console.error('Error signing in:', error);
-        showErrorNotification(error);
-      });
-    } else {
-      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-    }
-  };
+  const ctx = canvas.getContext('2d');
   
-  socket.onerror = function() {
-    showNotification('Could not connect to local authentication bridge. Using browser-only authentication.', 'warning');
-    
-    // Only trigger download of Python bridge script if connection failed
-    downloadPythonBridge();
-    
-    // Fall back to direct Google auth
-    if (gapi && gapi.auth2) {
-      console.log('Triggering Google login popup');
-      gapi.auth2.getAuthInstance().signIn({
-        ux_mode: 'popup',
-        prompt: 'select_account'
-      }).catch(error => {
-        console.error('Error signing in:', error);
-        showErrorNotification(error);
-      });
-    } else {
-      showNotification('Google authentication is not initialized yet. Please try again in a moment.', 'error');
-    }
-  };
+  // Draw background
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
   
-  socket.onclose = function() {
-    console.log('Connection to local bridge closed');
-  };
-}
-
-// Download Python bridge script
-function downloadPythonBridge() {
-  const bridgeScript = createPythonBridgeScript();
-  const blob = new Blob([bridgeScript], { type: 'text/plain' });
-  const url = window.URL.createObjectURL(blob);
+  // Draw text
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 40px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(initials, canvas.width / 2, canvas.height / 2);
   
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'google_auth_bridge.py';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
-  
-  showNotification('Python bridge script downloaded. Please run it on your Raspberry Pi to enable Google login.', 'info');
-}
-
-// Create Python bridge script content
-function createPythonBridgeScript() {
-  return `#!/usr/bin/env python3
-# Google Auth Bridge for Family Organizer
-# Run this script on a Raspberry Pi to enable Google authentication
-
-import asyncio
-import json
-import sys
-import os
-import websockets
-from http.server import HTTPServer, BaseHTTPRequestHandler
-
-# Configuration
-API_KEY = os.environ.get('GOOGLE_API_KEY')
-CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
-
-# Ask for API keys if not provided
-if not API_KEY:
-    API_KEY = input("Enter your Google API Key: ")
-if not CLIENT_ID:
-    CLIENT_ID = input("Enter your Google Client ID: ")
-
-print("Starting Google Auth Bridge for Family Organizer...")
-print("API Key:", API_KEY[:5] + "..." if API_KEY else "Not provided")
-print("Client ID:", CLIENT_ID[:10] + "..." if CLIENT_ID else "Not provided")
-
-# Web socket server to communicate with the web app
-async def auth_bridge(websocket):
-    print("Web client connected")
-    # The bridge now just confirms connectivity but doesn't trigger auth flow
-    # Authentication happens directly in the browser
-    await websocket.send(json.dumps({"status": "connected", "message": "Bridge connected successfully"}))
-
-# HTTP server to handle OAuth callback
-class CallbackHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path.startswith('/callback'):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            
-            # Display success message to user
-            self.wfile.write(b"""
-                <html>
-                <body>
-                    <h1>Bridge Connected</h1>
-                    <p>You can close this window and return to the Family Organizer app.</p>
-                </body>
-                </html>
-            """)
-
-# Start both servers
-async def main():
-    # Start websocket server
-    ws_server = await websockets.serve(auth_bridge, "localhost", 8765)
-    
-    # Start HTTP server for OAuth callback
-    http_server = HTTPServer(('localhost', 8000), CallbackHandler)
-    import threading
-    threading.Thread(target=http_server.serve_forever, daemon=True).start()
-    
-    print("Bridge servers started!")
-    print("WebSocket server running on ws://localhost:8765")
-    print("HTTP callback server running on http://localhost:8000")
-    
-    # Keep the server running
-    await asyncio.Future()
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("Bridge servers stopped.")
-        sys.exit(0)
-`;
-}
-
-// Store authentication tokens
-function storeAuthTokens(accessToken, refreshToken) {
-  // Store in localStorage or your preferred secure storage
-  localStorage.setItem('googleAccessToken', accessToken);
-  if (refreshToken) {
-    localStorage.setItem('googleRefreshToken', refreshToken);
-  }
-}
-
-// Create a mock GoogleUser object for compatibility with existing code
-function createMockGoogleUser(accessToken) {
-  return {
-    getBasicProfile: () => ({
-      getId: () => 'bridge_user_id',
-      getName: () => 'Raspberry Pi Bridge User',
-      getEmail: () => 'bridge@example.com',
-      getImageUrl: () => 'https://via.placeholder.com/32x32'
-    }),
-    getAuthResponse: () => ({
-      access_token: accessToken
-    })
-  };
-}
-
-// Show error notification based on error type
-function showErrorNotification(error) {
-  if (error.error === 'popup_blocked_by_browser') {
-    showNotification('Please allow popups for this site to sign in with Google', 'warning');
-  } else if (error.error === 'access_denied') {
-    showNotification('Sign-in was cancelled', 'info');
-  } else {
-    showNotification('Failed to sign in with Google', 'error');
-  }
+  return canvas.toDataURL('image/png');
 }
 
 // Handle logout
 function handleLogout(event) {
   event.preventDefault();
   
-  if (!googleAuth) {
-    showNotification('Google authentication is not initialized', 'error');
-    return;
-  }
+  // Clear localStorage
+  localStorage.removeItem('currentUser');
   
-  googleAuth.signOut().then(() => {
-    showNotification('You have been signed out', 'info');
-  }).catch(error => {
-    console.error('Error signing out:', error);
-    showNotification('Failed to sign out', 'error');
-  });
-}
-
-// Update UI for logged-out state
-function updateUIForLoggedOut() {
-  // Clear any personal data from the UI
-  document.querySelectorAll('.placeholder-message').forEach(placeholder => {
-    if (placeholder.parentElement.id === 'today-events') {
-      placeholder.querySelector('p').textContent = 'Please sign in to view your events';
-    } else if (placeholder.parentElement.id === 'today-tasks') {
-      placeholder.querySelector('p').textContent = 'Please sign in to view your tasks';
-    } else if (placeholder.parentElement.id === 'today-meals') {
-      placeholder.querySelector('p').textContent = 'Please sign in to view your meal plan';
-    } else if (placeholder.parentElement.id === 'family-members') {
-      placeholder.querySelector('p').textContent = 'Please sign in to view your family';
-    }
-  });
+  // Update state
+  appState.currentUser = null;
+  appState.isAuthenticated = false;
+  appState.family = [];
   
-  // Clear calendar if visible
-  const calendarContainer = document.getElementById('calendar-container');
-  if (calendarContainer) {
-    calendarContainer.innerHTML = `
-      <div class="placeholder-message">
-        <i class="material-icons">lock</i>
-        <p>Please sign in to access your calendar</p>
-      </div>
-    `;
-  }
-}
-
-// Check if current auth token is valid
-async function isAuthTokenValid() {
-  if (!appState.isAuthenticated || !appState.currentUser || !appState.currentUser.accessToken) {
-    return false;
-  }
+  // Update UI
+  updateSignInStatus(false);
   
-  try {
-    // Make a test API call to check token validity
-    await gapi.client.calendar.calendarList.list({
-      maxResults: 1
-    });
-    return true;
-  } catch (error) {
-    console.error('Auth token validation failed:', error);
-    return false;
-  }
-}
-
-// Refresh the access token if needed
-async function refreshAuthToken() {
-  if (!googleAuth) return false;
-  
-  try {
-    const currentUser = googleAuth.currentUser.get();
-    const authResponse = await currentUser.reloadAuthResponse();
-    
-    // Update the token in appState
-    if (appState.currentUser) {
-      appState.currentUser.accessToken = authResponse.access_token;
-      await updateUser(appState.currentUser);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error refreshing auth token:', error);
-    return false;
-  }
+  showNotification('You have been signed out', 'info');
 }
 
 // Add a family member
@@ -419,13 +355,15 @@ async function addFamilyMember(memberData) {
       birthdate: memberData.birthdate || null,
       createdAt: new Date().toISOString(),
       lastActivity: null,
-      accessLevel: memberData.accessLevel || 'restricted'
+      accessLevel: memberData.accessLevel || 'restricted',
+      notes: memberData.notes || ''
     };
-    
-    await addFamilyMember(newMember);
     
     // Add to app state
     appState.family.push(newMember);
+    
+    // Save to localStorage
+    localStorage.setItem('familyMembers', JSON.stringify(appState.family));
     
     showNotification(`${newMember.name} added to your family`, 'success');
     return newMember;

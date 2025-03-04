@@ -83,11 +83,44 @@ async function initDatabase() {
 
 // User-related database functions
 async function getUserById(userId) {
-  if (!db) throw new Error('Database not initialized');
+  if (!db) {
+    // Fallback to localStorage if DB not initialized
+    try {
+      const usersString = localStorage.getItem('users');
+      if (usersString) {
+        const users = JSON.parse(usersString);
+        return users.find(user => user.id === userId) || null;
+      }
+    } catch (error) {
+      console.error('Error getting user from localStorage:', error);
+    }
+    return null;
+  }
   return db.get(stores.users, userId);
 }
 
 async function addUser(user) {
+  // Store in localStorage as fallback
+  try {
+    let users = [];
+    const usersString = localStorage.getItem('users');
+    if (usersString) {
+      users = JSON.parse(usersString);
+    }
+    
+    // Check if user already exists
+    const existingIndex = users.findIndex(u => u.id === user.id);
+    if (existingIndex !== -1) {
+      users[existingIndex] = user;
+    } else {
+      users.push(user);
+    }
+    
+    localStorage.setItem('users', JSON.stringify(users));
+  } catch (error) {
+    console.error('Error storing user in localStorage:', error);
+  }
+  
   if (!db) throw new Error('Database not initialized');
   return db.put(stores.users, user);
 }
@@ -104,7 +137,19 @@ async function deleteUser(userId) {
 
 // Family member database functions
 async function getFamilyMembersByUserId(userId) {
-  if (!db) throw new Error('Database not initialized');
+  // Fallback to localStorage if DB not initialized
+  if (!db) {
+    try {
+      const familyMembersString = localStorage.getItem('familyMembers');
+      if (familyMembersString) {
+        const familyMembers = JSON.parse(familyMembersString);
+        return familyMembers.filter(member => member.userId === userId);
+      }
+    } catch (error) {
+      console.error('Error getting family members from localStorage:', error);
+    }
+    return [];
+  }
   
   const tx = db.transaction(stores.family, 'readonly');
   const index = tx.store.index('userId');
@@ -112,11 +157,45 @@ async function getFamilyMembersByUserId(userId) {
 }
 
 async function getFamilyMemberById(memberId) {
-  if (!db) throw new Error('Database not initialized');
+  // Fallback to localStorage if DB not initialized
+  if (!db) {
+    try {
+      const familyMembersString = localStorage.getItem('familyMembers');
+      if (familyMembersString) {
+        const familyMembers = JSON.parse(familyMembersString);
+        return familyMembers.find(member => member.id === memberId) || null;
+      }
+    } catch (error) {
+      console.error('Error getting family member from localStorage:', error);
+    }
+    return null;
+  }
+  
   return db.get(stores.family, memberId);
 }
 
 async function addFamilyMember(member) {
+  // Store in localStorage as fallback
+  try {
+    let familyMembers = [];
+    const familyMembersString = localStorage.getItem('familyMembers');
+    if (familyMembersString) {
+      familyMembers = JSON.parse(familyMembersString);
+    }
+    
+    // Check if member already exists
+    const existingIndex = familyMembers.findIndex(m => m.id === member.id);
+    if (existingIndex !== -1) {
+      familyMembers[existingIndex] = member;
+    } else {
+      familyMembers.push(member);
+    }
+    
+    localStorage.setItem('familyMembers', JSON.stringify(familyMembers));
+  } catch (error) {
+    console.error('Error storing family member in localStorage:', error);
+  }
+  
   if (!db) throw new Error('Database not initialized');
   return db.put(stores.family, member);
 }
