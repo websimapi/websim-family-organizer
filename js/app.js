@@ -2,7 +2,7 @@
 
 // Configuration object
 const config = {
-  googleClientId: '864838475869-jp2ml45blk2h9ffrbf34ko12olejcvo5.apps.googleusercontent.com',
+  googleClientId: '864838475869-jrg1s2odt5pq3lkapj5fmmfv8u0laiem.apps.googleusercontent.com',
   googleApiKey: 'AIzaSyAPwTYREUq0vJSqxzceQVsra4wdmw3XyT4',
   calendarScopes: 'https://www.googleapis.com/auth/calendar',
   appVersion: '1.0.0',
