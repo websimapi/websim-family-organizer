@@ -18,15 +18,15 @@ A comprehensive browser-based application designed to streamline household manag
 - Google account for calendar integration
 - Web server to host the application files (or run locally)
 
-### Google API Setup
+### Google API Setup (IMPORTANT)
 
 1. Visit the [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project
 3. Enable the Google Calendar API
 4. Create OAuth 2.0 credentials:
-   - Select "Web application" as the application type
-   - Add your domain to the authorized JavaScript origins
-   - Add your domain + "/callback" to the authorized redirect URIs
+   - Select "Web application" as the application type (NOT "Native Elliott" or other types)
+   - Add your domain to the authorized JavaScript origins (e.g., http://localhost:8000)
+   - Add your domain + "/callback" to the authorized redirect URIs (e.g., http://localhost:8000/callback)
 5. Note your Client ID and API Key
 
 ### Configuration
@@ -40,8 +40,6 @@ A comprehensive browser-based application designed to streamline household manag
      // other config options...
    };
 ```
-
-2. Install the necessary dependencies and run the application.
 
 ## Usage
 
